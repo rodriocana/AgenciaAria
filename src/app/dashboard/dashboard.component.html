@@ -1,0 +1,50 @@
+
+<div class="dashboard-container">
+  <!-- Menú hamburguesa para móviles -->
+  <button class="hamburger" (click)="toggleMenu()" [class.active]="isMenuOpen">
+    <span></span>
+    <span></span>
+    <span></span>
+  </button>
+
+  <!-- Sidebar -->
+  <nav class="sidebar" [class.open]="isMenuOpen">
+    <div class="sidebar-header">
+      <img src="/agencia.png" alt="Agency Logo" class="logo">
+    </div>
+    <ul class="menu">
+      <li><a routerLink="/dashboard" routerLinkActive="active" (click)="toggleMenu()">Dashboard</a></li>
+      <li><a routerLink="/offers" routerLinkActive="active" (click)="toggleMenu()">Ofertas de Trabajo</a></li>
+      <li><a routerLink="/profile" routerLinkActive="active" (click)="toggleMenu()">Perfil</a></li>
+      <li><a href="#" (click)="logout(); toggleMenu()">Cerrar Sesión</a></li>
+    </ul>
+  </nav>
+
+  <!-- Contenido principal -->
+  <main class="main-content">
+    <header class="header">
+      <h1>Dashboard</h1>
+      <!-- <p>Bienvenido, {{ (authService.getUser()?.nombre) || 'Usuario' }}</p> -->
+    </header>
+
+    <section class="job-offers">
+      <h2>Ofertas de Trabajo</h2>
+      <div class="offers-grid">
+        <div class="offer-card" *ngFor="let offer of jobOffers">
+          <h3>{{ offer.titulo }}</h3>
+          <p>{{ offer.descripcion }}</p>
+          <div class="offer-details">
+            <span>Fecha: {{ offer.fecha }}</span>
+            <span>Creado por: {{ offer.creado_por }}</span>
+            <span>Creado el: {{ offer.fecha_creacion | date:'short' }}</span>
+            <span class="status" [class.open]="offer.estado === 'open'" [class.closed]="offer.estado === 'closed'">
+              {{ offer.estado === 'open' ? 'Abierta' : 'Cerrada' }}
+            </span>
+          </div>
+          <button class="apply-button" [disabled]="offer.estado === 'closed'">Aplicar</button>
+        </div>
+      </div>
+    </section>
+  </main>
+</div>
+```

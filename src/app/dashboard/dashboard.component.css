@@ -1,0 +1,237 @@
+
+.dashboard-container {
+  display: flex;
+  min-height: 100vh;
+  background: #f1f5f9;
+}
+
+.hamburger {
+  display: none;
+  position: fixed;
+  top: 1rem;
+  left: 1rem;
+  z-index: 1000;
+  background: none;
+  border: none;
+  cursor: pointer;
+  padding: 0.5rem;
+}
+
+.hamburger span {
+  display: block;
+  width: 24px;
+  height: 3px;
+  background: #1e293b;
+  margin: 5px 0;
+  transition: all 0.3s;
+}
+
+.hamburger.active span:nth-child(1) {
+  transform: rotate(45deg) translate(5px, 5px);
+}
+
+.hamburger.active span:nth-child(2) {
+  opacity: 0;
+}
+
+.hamburger.active span:nth-child(3) {
+  transform: rotate(-45deg) translate(7px, -7px);
+}
+
+.sidebar {
+  width: 250px;
+  background: #ffffff;
+  border-right: 1px solid #e2e8f0;
+  padding: 1.5rem;
+  transition: transform 0.3s ease-in-out;
+}
+
+.sidebar .sidebar-header {
+  margin-bottom: 2rem;
+  text-align: center;
+}
+
+.sidebar .logo {
+  max-width: 150px;
+  height: auto;
+}
+
+.sidebar .menu {
+  list-style: none;
+  padding: 0;
+}
+
+.sidebar .menu li {
+  margin-bottom: 1rem;
+}
+
+.sidebar .menu a {
+  display: block;
+  padding: 0.75rem;
+  color: #1e293b;
+  text-decoration: none;
+  font-size: 1rem;
+  border-radius: 6px;
+  transition: background 0.3s;
+}
+
+.sidebar .menu a:hover {
+  background: #e0e7ff;
+}
+
+.sidebar .menu a.active {
+  background: #4f46e5;
+  color: #ffffff;
+}
+
+.main-content {
+  flex: 1;
+  padding: 2rem;
+  overflow-y: auto;
+}
+
+.header {
+  margin-bottom: 2rem;
+}
+
+.header h1 {
+  color: #1e293b;
+  font-size: 1.8rem;
+  margin-bottom: 0.5rem;
+}
+
+.header p {
+  color: #64748b;
+  font-size: 1rem;
+}
+
+.job-offers h2 {
+  color: #1e293b;
+  font-size: 1.5rem;
+  margin-bottom: 1.5rem;
+}
+
+.offers-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(300px, 1fr));
+  gap: 1.5rem;
+}
+
+.offer-card {
+  background: #ffffff;
+  border-radius: 8px;
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
+  padding: 1.5rem;
+  transition: transform 0.3s;
+}
+
+.offer-card:hover {
+  transform: translateY(-4px);
+}
+
+.offer-card h3 {
+  color: #1e293b;
+  font-size: 1.2rem;
+  margin-bottom: 0.5rem;
+}
+
+.offer-card p {
+  color: #64748b;
+  font-size: 0.9rem;
+  margin-bottom: 1rem;
+}
+
+.offer-details {
+  display: flex;
+  flex-direction: column;
+  gap: 0.5rem;
+  font-size: 0.85rem;
+  color: #64748b;
+  margin-bottom: 1rem;
+}
+
+.offer-details .status {
+  padding: 0.3rem 0.6rem;
+  border-radius: 12px;
+  font-weight: 500;
+}
+
+.offer-details .status.open {
+  background: #d1fae5;
+  color: #065f46;
+}
+
+.offer-details .status.closed {
+  background: #fee2e2;
+  color: #991b1b;
+}
+
+.apply-button {
+  width: 100%;
+  padding: 0.8rem;
+  background: #4f46e5;
+  color: #ffffff;
+  border: none;
+  border-radius: 6px;
+  font-size: 0.9rem;
+  cursor: pointer;
+  transition: background 0.3s;
+}
+
+.apply-button:hover {
+  background: #4338ca;
+}
+
+.apply-button:disabled {
+  background: #94a3b8;
+  cursor: not-allowed;
+}
+
+@media (max-width: 768px) {
+  .hamburger {
+    display: block;
+  }
+
+  .sidebar {
+    position: fixed;
+    top: 0;
+    left: 0;
+    height: 100%;
+    transform: translateX(-100%);
+    z-index: 999;
+  }
+
+  .sidebar.open {
+    transform: translateX(0);
+  }
+
+  .main-content {
+    padding: 1rem;
+  }
+
+  .header h1 {
+    font-size: 1.5rem;
+  }
+
+  .job-offers h2 {
+    font-size: 1.3rem;
+  }
+
+  .offers-grid {
+    grid-template-columns: 1fr;
+  }
+}
+
+@media (max-width: 480px) {
+  .logo {
+    max-width: 120px;
+  }
+
+  .sidebar {
+    width: 200px;
+  }
+
+  .offer-card {
+    padding: 1rem;
+  }
+}
