@@ -26,17 +26,18 @@ export class LoginComponent {
     });
   }
 
-  onLogin(): void {
-    if (this.loginForm.valid) {
-      const { correo, contrasena } = this.loginForm.value;
-      this.authService.login(correo, contrasena).subscribe({
-        next: () => {
-          this.router.navigate(['/dashboard']);
-        },
-        error: (err) => {
-          this.errorMessage = err.message;
-        }
-      });
-    }
+ onLogin(): void {
+  if (this.loginForm.valid) {
+    const { correo, contrasena } = this.loginForm.value;
+    console.log('Datos enviados al servicio:', { correo, contrasena }); // Agrega este log
+    this.authService.login(correo, contrasena).subscribe({
+      next: () => {
+        this.router.navigate(['/dashboard']);
+      },
+      error: (err) => {
+        this.errorMessage = err.message;
+      }
+    });
   }
+}
 }

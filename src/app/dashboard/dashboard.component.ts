@@ -27,7 +27,7 @@ export class DashboardComponent implements OnInit {
   jobOffers: JobOffer[] = [];
 
   constructor(
-    private authService: AuthService,
+    public authService: AuthService,
     private router: Router,
     private http: HttpClient
   ) {}

@@ -32,6 +32,7 @@ const authenticateToken = (req, res, next) => {
     });
 };
 
+
 // Endpoint: Registro de usuario
 app.post('/api/register', async (req, res) => {
     const { nombre, correo, contrasena, rol } = req.body;
@@ -44,10 +45,11 @@ app.post('/api/register', async (req, res) => {
             return res.status(400).json({ error: 'El correo ya está registrado' });
         }
 
-        const hashedPassword = await bcrypt.hash(contrasena, 10);
+        // Guardar la contraseña en texto plano (SIN HASH)
+        console.log('Contraseña almacenada:', contrasena); // Log para depuración
         await connection.execute(
             'INSERT INTO usuarios (nombre, correo, contrasena, rol) VALUES (?, ?, ?, ?)',
-            [nombre, correo, hashedPassword, rol || 'trabajador']
+            [nombre, correo, contrasena, rol || 'trabajador']
         );
 
         await connection.end();
@@ -57,14 +59,19 @@ app.post('/api/register', async (req, res) => {
         res.status(500).json({ error: 'Error al registrar el usuario' });
     }
 });
-
 // Endpoint: Login
 app.post('/api/login', async (req, res) => {
+    console.log('Cuerpo de la solicitud:', req.body); // Agrega este log
     const { correo, contrasena } = req.body;
+
+    if (!correo || !contrasena) {
+        return res.status(400).json({ error: 'Faltan correo o contraseña en la solicitud' });
+    }
 
     try {
         const connection = await mysql.createConnection(dbConfig);
         const [users] = await connection.execute('SELECT * FROM usuarios WHERE correo = ?', [correo]);
+        console.log('Usuarios encontrados:', users);
 
         if (users.length === 0) {
             await connection.end();
@@ -72,7 +79,9 @@ app.post('/api/login', async (req, res) => {
         }
 
         const user = users[0];
-        const isMatch = await bcrypt.compare(contrasena, user.contrasena);
+        // Comparar contraseña en texto plano
+        const isMatch = contrasena === user.contrasena;
+        console.log('¿Contraseña coincide?', isMatch);
 
         if (!isMatch) {
             await connection.end();

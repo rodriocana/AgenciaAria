@@ -192,6 +192,13 @@
     display: block;
   }
 
+
+  .header{
+        color: #64748b;
+    font-size: 1rem;
+    margin-left: 87px;
+  }
+
   .sidebar {
     position: fixed;
     top: 0;
@@ -218,7 +225,6 @@
   }
 
   .offers-grid {
-    grid-template-columns: 1fr;
   }
 }
 
