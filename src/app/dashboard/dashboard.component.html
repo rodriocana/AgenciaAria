@@ -13,8 +13,11 @@
     </div>
     <ul class="menu">
       <li><a routerLink="/dashboard" routerLinkActive="active" (click)="toggleMenu(); viewMode = 'available'; loadContent()">Dashboard</a></li>
-      <li><a routerLink="/offers" routerLinkActive="active" (click)="toggleMenu(); viewMode = 'applied'; loadContent()">Mis Ofertas de Trabajo</a></li>
-      <li><a routerLink="/profile" routerLinkActive="active" (click)="switchToProfile(); toggleMenu()">Perfil</a></li>
+      <li *ngIf="authService.getUser()?.rol === 'trabajador'"><a routerLink="/offers" routerLinkActive="active" (click)="toggleMenu(); viewMode = 'applied'; loadContent()">Mis Ofertas Confirmadas</a></li>
+      <li *ngIf="authService.getUser()?.rol === 'trabajador'"><a routerLink="/profile" routerLinkActive="active" (click)="switchToProfile(); toggleMenu()">Perfil</a></li>
+      <li *ngIf="authService.getUser()?.rol === 'administrador'">
+        <a routerLink="/admin-offers" routerLinkActive="active" (click)="toggleMenu(); switchToAdmin()">Gestionar Ofertas</a>
+      </li>
       <li><a href="javascript:void(0)" (click)="logout(); toggleMenu()">Cerrar Sesión</a></li>
     </ul>
   </nav>
@@ -22,7 +25,7 @@
   <!-- Contenido principal -->
   <main class="main-content">
     <header class="header">
-      <h1>{{ viewMode === 'available' ? 'Tablón de ofertas' : viewMode === 'applied' ? 'Mis Ofertas de Trabajo' : 'Mi Perfil' }}</h1>
+      <h1>{{ viewMode === 'available' ? 'Tablón de ofertas' : viewMode === 'applied' ? 'Mis Ofertas Confirmadas' : viewMode === 'admin' ? 'Gestionar Inscripciones' : 'Mi Perfil' }}</h1>
       <p>Bienvenido, {{ (user?.nombre) || 'Usuario' }}</p>
     </header>
 
@@ -31,8 +34,7 @@
       <div class="section-header">
         <h2>Ofertas de Trabajo Disponibles</h2>
         <div class="add-offer-container" *ngIf="authService.getUser()?.rol === 'administrador'">
-
-          <button class="add-button" (click)="openModal()">Añadir oferta +</button>
+          <button class="add-button"  *ngIf="authService.getUser()?.rol === 'administrador' && viewMode === 'available'" (click)="openModal()"> Añadir oferta +</button>
         </div>
       </div>
       <div class="filter-container">
@@ -46,21 +48,24 @@
       <div class="offers-calendar-container">
         <div class="offers-grid">
           <div *ngIf="filteredOffers.length === 0" class="no-offers">No hay ofertas disponibles para el filtro seleccionado.</div>
-          <div class="offer-card" *ngFor="let offer of filteredOffers" [attr.data-status]="offer.estado">
+          <div class="offer-card" *ngFor="let offer of filteredOffers" [attr.data-status]="offer.estado" (click)="authService.getUser()?.rol === 'administrador' ? selectOffer(offer) : null">
             <h3>{{ offer.titulo }}</h3>
             <p>{{ offer.descripcion }}</p>
             <div class="offer-details">
-                <span>Fecha: {{ offer.fecha }}</span>
-                <span>Creado por: {{ offer.creado_por }}</span>
-                <span>Creado el: {{ offer.fecha_creacion | date:'short' }}</span>
-                <span class="status" [class.open]="offer.estado === 'open'" [class.closed]="offer.estado === 'closed'">
-                    {{ offer.estado === 'open' ? 'Abierta' : 'Cerrada' }}
-                </span>
+              <span>Fecha: {{ offer.fecha }}</span>
+              <span>Creado por: {{ offer.creado_por }}</span>
+              <span>Creado el: {{ offer.fecha_creacion | date:'short' }}</span>
+              <span class="status" [class.open]="offer.estado === 'open'" [class.closed]="offer.estado === 'closed'">
+                {{ offer.estado === 'open' ? 'Abierta' : 'Cerrada' }}
+              </span>
             </div>
-                  <button *ngIf="authService.getUser()?.rol !== 'administrador'" class="apply-button" (click)="aplicarOferta(offer.id)" [disabled]="offer.estado === 'closed' || offer.aplicada">
-            {{ offer.aplicada ? 'Aplicada' : 'Aplicar' }}
-        </button>
-        </div>
+            <button *ngIf="authService.getUser()?.rol !== 'administrador'"
+                    class="apply-button"
+                    (click)="aplicarOferta(offer.id); $event.stopPropagation()"
+                    [disabled]="offer.estado === 'closed' || offer.inscrita">
+              {{ offer.inscrita ? 'Inscrito' : 'Inscribirse' }}
+            </button>
+          </div>
         </div>
         <div class="calendar-container">
           <full-calendar [options]="calendarOptions"></full-calendar>
@@ -68,28 +73,87 @@
       </div>
     </section>
 
-    <!-- Ofertas aplicadas -->
+    <!-- Ofertas confirmadas -->
     <section class="job-offers" *ngIf="viewMode === 'applied' && authService.getUser()?.rol === 'trabajador'">
-    <h2>Mis Ofertas de Trabajo</h2>
-    <div *ngIf="appliedOffers.length === 0" class="no-offers">No has aplicado a ninguna oferta.</div>
-    <div class="offers-grid">
+      <h2>Mis Ofertas Confirmadas</h2>
+      <div *ngIf="appliedOffers.length === 0" class="no-offers">No tienes ofertas confirmadas.</div>
+      <div class="offers-grid">
         <div class="offer-card" *ngFor="let offer of appliedOffers">
-            <h3>{{ offer.titulo }}</h3>
-            <p>{{ offer.descripcion }}</p>
-            <div class="offer-details">
-                <span>Fecha: {{ offer.fecha }}</span>
-                <span>Creado por: {{ offer.creado_por }}</span>
-                <span>Creado el: {{ offer.fecha_creacion | date:'short' }}</span>
-                <span class="status" [class.open]="offer.estado === 'open'" [class.closed]="offer.estado === 'closed'">
-                    {{ offer.estado === 'open' ? 'Abierta' : 'Cerrada' }}
-                </span>
-            </div>
-           <button class="apply-button desaplicar" (click)="desaplicarOferta(offer.id)" [disabled]="offer.estado === 'open'">
-            Desaplicar
-        </button>
+          <h3>{{ offer.titulo }}</h3>
+          <p>{{ offer.descripcion }}</p>
+          <div class="offer-details">
+            <span>Fecha: {{ offer.fecha }}</span>
+            <span>Creado por: {{ offer.creado_por }}</span>
+            <span>Creado el: {{ offer.fecha_creacion | date:'short' }}</span>
+            <span class="status" [class.open]="offer.estado === 'open'" [class.closed]="offer.estado === 'closed'">
+              {{ offer.estado === 'open' ? 'Abierta' : 'Cerrada' }}
+            </span>
+          </div>
+          <button class="apply-button desaplicar"
+                  (click)="desaplicarOferta(offer.id)"
+                  [disabled]="offer.estado === 'open'">
+            Desinscribirse
+          </button>
         </div>
-    </div>
-</section>
+      </div>
+    </section>
+
+    <!-- Gestión de inscripciones (admin) -->
+    <section class="job-offers" *ngIf="viewMode === 'admin' && authService.getUser()?.rol === 'administrador'">
+      <div class="section-header">
+        <h2>Ofertas con Inscripciones</h2>
+        <button class="add-button" (click)="openModal()">Añadir oferta +</button>
+      </div>
+      <div class="filter-container">
+        <label for="offer-filter">Filtrar por estado:</label>
+        <select id="offer-filter" [(ngModel)]="offerFilter" (change)="filterOffers()">
+          <option value="all">Todas</option>
+          <option value="open">Abiertas</option>
+          <option value="closed">Cerradas</option>
+        </select>
+      </div>
+      <div class="offers-grid">
+        <div *ngIf="filteredOffers.length === 0" class="no-offers">No hay ofertas con inscripciones para el filtro seleccionado.</div>
+        <div class="offer-card" *ngFor="let offer of filteredOffers" [attr.data-status]="offer.estado" (click)="selectOffer(offer)">
+          <h3>{{ offer.titulo }}</h3>
+          <p>{{ offer.descripcion }}</p>
+          <div class="offer-details">
+            <span>Fecha: {{ offer.fecha }}</span>
+            <span>Creado por: {{ offer.creado_por }}</span>
+            <span>Creado el: {{ offer.fecha_creacion | date:'short' }}</span>
+            <span class="status" [class.open]="offer.estado === 'open'" [class.closed]="offer.estado === 'closed'">
+              {{ offer.estado === 'open' ? 'Abierta' : 'Cerrada' }}
+            </span>
+          </div>
+        </div>
+      </div>
+        <div class="inscriptions-section" *ngIf="selectedOffer">
+          <h2>
+            {{ selectedOffer.estado === 'open' ? 'Inscritos pendientes para' : 'Trabajadores asignados en' }}: {{ selectedOffer.titulo }}
+          </h2>
+          <div *ngIf="isLoadingInscriptions" class="spinner">Cargando inscripciones/asignados...</div>
+          <div *ngIf="!isLoadingInscriptions && inscriptions.length === 0" class="no-inscriptions">
+            {{ selectedOffer.estado === 'open' ? 'No hay trabajadores inscritos en esta oferta.' : 'No hay trabajadores asignados en esta oferta.' }}
+          </div>
+          <div class="inscriptions-grid" *ngIf="!isLoadingInscriptions && inscriptions.length > 0">
+            <div class="inscription-card" *ngFor="let inscription of inscriptions">
+              <p><strong>Nombre:</strong> {{ inscription.nombre }}</p>
+              <p><strong>Correo:</strong> {{ inscription.correo }}</p>
+              <p><strong>Fecha:</strong> {{ inscription.fecha_inscripcion | date:'short' }}</p>
+              <!-- Botón solo para ofertas abiertas (inscritos pendientes) -->
+              <button *ngIf="selectedOffer.estado === 'open'"
+                      class="assign-button"
+                      (click)="asociarTrabajador(inscription.id_trabajador, inscription.id_oferta)">
+                Asignar a la oferta
+              </button>
+              <!-- Indicador para ofertas cerradas (asignados) -->
+              <div *ngIf="selectedOffer.estado === 'closed'" class="assigned-status">
+                <span class="status assigned">Asignado</span>
+              </div>
+            </div>
+          </div>
+        </div>
+    </section>
 
     <!-- Perfil -->
     <section class="user-profile" *ngIf="viewMode === 'profile'">

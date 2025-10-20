@@ -7,5 +7,6 @@ export const routes: Routes = [
   { path: '', redirectTo: '/login', pathMatch: 'full' },
   { path: 'dashboard', component: DashboardComponent }, // viewMode = 'available'
   { path: 'offers', component: DashboardComponent }, // viewMode = 'applied'
-  { path: 'profile', component: DashboardComponent } // viewMode = 'profile'
+  { path: 'profile', component: DashboardComponent }, // viewMode = 'profile'
+  { path: 'admin-offers', component: DashboardComponent } // viewMode = 'admin'
 ];

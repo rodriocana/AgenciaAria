@@ -18,7 +18,7 @@ interface JobOffer {
   creado_por: number;
   fecha_creacion: string;
   estado: 'open' | 'closed';
-  aplicada: boolean;
+  inscrita: boolean;
 }
 
 interface User {
@@ -36,20 +36,31 @@ interface Document {
   fecha_subida: string;
 }
 
+interface Inscription {
+  id: number;
+  id_trabajador: number;
+  id_oferta: number;
+  fecha_inscripcion: string;
+  nombre: string;
+  correo: string;
+}
+
 @Component({
   selector: 'app-dashboard',
   standalone: true,
   imports: [CommonModule, RouterModule, FormsModule, FullCalendarModule],
   templateUrl: './dashboard.component.html',
   styleUrls: ['./dashboard.component.css'],
-  encapsulation: ViewEncapsulation.None // Desactiva la encapsulación
+  encapsulation: ViewEncapsulation.None
 })
 export class DashboardComponent implements OnInit {
   isMenuOpen = false;
   jobOffers: JobOffer[] = [];
   appliedOffers: JobOffer[] = [];
   documents: Document[] = [];
-  viewMode: 'available' | 'applied' | 'profile' = 'available';
+  inscriptions: Inscription[] = [];
+  selectedOffer: JobOffer | null = null;
+  viewMode: 'available' | 'applied' | 'profile' | 'admin' = 'available';
   isModalOpen = false;
   nuevaOferta = { titulo: '', descripcion: '', fecha: '' };
   user: User | null = null;
@@ -57,6 +68,7 @@ export class DashboardComponent implements OnInit {
   isLoading = false;
   isUploading = false;
   isLoadingDocuments = false;
+  isLoadingInscriptions = false;
   calendarEvents: EventInput[] = [];
   calendarOptions: CalendarOptions = {
     plugins: [dayGridPlugin],
@@ -73,12 +85,14 @@ export class DashboardComponent implements OnInit {
 
   constructor(
     public authService: AuthService,
-    private router: Router,
+    public router: Router,
     private route: ActivatedRoute,
     private ofertasService: OfertasService,
     private documentService: DocumentService,
     private toastr: ToastrService
   ) {}
+
+
 
   ngOnInit(): void {
     const token = this.authService.getToken();
@@ -96,12 +110,15 @@ export class DashboardComponent implements OnInit {
         this.viewMode = 'profile';
       } else if (path === 'offers') {
         this.viewMode = 'applied';
+      } else if (path === 'admin-offers') {
+        this.viewMode = 'admin';
       } else {
         this.viewMode = 'available';
       }
       this.loadContent();
     });
   }
+
 
   loadUserData(): void {
     this.isLoading = true;
@@ -115,6 +132,8 @@ export class DashboardComponent implements OnInit {
   loadContent(): void {
     if (this.viewMode === 'profile') {
       this.loadDocuments();
+    } else if (this.viewMode === 'admin') {
+      this.loadOffers();
     } else {
       this.loadOffers();
       if (this.viewMode === 'available') {
@@ -123,44 +142,60 @@ export class DashboardComponent implements OnInit {
     }
   }
 
-  loadOffers(): void {
+loadOffers(): void {
     if (this.viewMode === 'available') {
-      this.ofertasService.getOfertas().subscribe({
-        next: (offers) => {
-          console.log('Ofertas cargadas:', offers); // Depuración
-          this.jobOffers = offers;
-          this.filterOffers();
-        },
-        error: (err) => {
-          console.error('Error al cargar ofertas:', err);
-          this.toastr.error(err.error?.error || 'Error al cargar las ofertas', 'Error');
-          if (err.status === 401 || err.status === 403) {
-            this.authService.logout();
-            this.router.navigate(['/login']);
-          }
-        }
-      });
-    } else if (this.viewMode === 'applied') {
-      const idTrabajador = this.authService.getUser()?.id;
-      if (idTrabajador) {
-        this.ofertasService.getOfertasAplicadas(idTrabajador).subscribe({
-          next: (offers) => {
-            console.log('Ofertas aplicadas cargadas:', offers); // Depuración
-            this.appliedOffers = offers;
-          },
-          error: (err) => {
-            console.error('Error al cargar ofertas aplicadas:', err);
-            this.toastr.error(err.error?.error || 'Error al cargar las ofertas aplicadas', 'Error');
-          }
+        this.ofertasService.getOfertas().subscribe({
+            next: (offers) => {
+                console.log('Ofertas cargadas:', offers);
+                this.jobOffers = offers;
+                this.filterOffers();
+            },
+            error: (err) => {
+                console.error('Error al cargar ofertas:', err);
+                this.toastr.error(err.error?.error || 'Error al cargar las ofertas', 'Error');
+                if (err.status === 401 || err.status === 403) {
+                    this.authService.logout();
+                    this.router.navigate(['/login']);
+                }
+            }
         });
-      } else {
-        this.toastr.error('No se pudo obtener el ID del usuario', 'Error');
-      }
+    } else if (this.viewMode === 'admin') {
+        this.ofertasService.getAdminOffers().subscribe({
+            next: (offers) => {
+                console.log('Ofertas con inscritos cargadas:', offers);
+                this.jobOffers = offers;
+                this.filterOffers();
+            },
+            error: (err) => {
+                console.error('Error al cargar ofertas con inscritos:', err);
+                this.toastr.error(err.error?.error || 'Error al cargar las ofertas con inscritos', 'Error');
+                if (err.status === 401 || err.status === 403) {
+                    this.authService.logout();
+                    this.router.navigate(['/login']);
+                }
+            }
+        });
+    } else if (this.viewMode === 'applied') {
+        const idTrabajador = this.authService.getUser()?.id;
+        if (idTrabajador) {
+            this.ofertasService.getOfertasAplicadas(idTrabajador).subscribe({
+                next: (offers) => {
+                    console.log('Ofertas confirmadas cargadas:', offers);
+                    this.appliedOffers = offers;
+                },
+                error: (err) => {
+                    console.error('Error al cargar ofertas confirmadas:', err);
+                    this.toastr.error(err.error?.error || 'Error al cargar las ofertas confirmadas', 'Error');
+                }
+            });
+        } else {
+            this.toastr.error('No se pudo obtener el ID del usuario', 'Error');
+        }
     }
-  }
+}
 
   filterOffers(): void {
-    console.log('Filtro aplicado:', this.offerFilter); // Depuración
+    console.log('Filtro aplicado:', this.offerFilter);
     if (this.offerFilter === 'all') {
       this.filteredOffers = [...this.jobOffers];
     } else if (this.offerFilter === 'open') {
@@ -174,17 +209,16 @@ export class DashboardComponent implements OnInit {
     const idTrabajador = this.user?.rol === 'trabajador' ? this.user.id : undefined;
     this.ofertasService.getOfertasParaCalendario(idTrabajador).subscribe({
       next: (offers) => {
-        console.log('Ofertas para calendario (originales):', offers); // Depuración
+        console.log('Ofertas para calendario (originales):', offers);
         this.calendarEvents = offers.map(offer => {
-          // Normalizar la fecha a YYYY-MM-DD para evitar desplazamiento por zona horaria
           const date = new Date(offer.fecha);
-          const normalizedDate = date.toISOString().split('T')[0]; // Extrae solo YYYY-MM-DD
-          console.log(`Oferta ${offer.id}: Fecha original=${offer.fecha}, Fecha normalizada=${normalizedDate}, Estado=${offer.estado}, Aplicada=${offer.aplicada}`); // Depuración
+          const normalizedDate = date.toISOString().split('T')[0];
+          console.log(`Oferta ${offer.id}: Fecha original=${offer.fecha}, Fecha normalizada=${normalizedDate}, Estado=${offer.estado}, Inscrita=${offer.inscrita}`);
           return {
             title: offer.titulo,
             date: normalizedDate,
             id: offer.id.toString(),
-            backgroundColor: offer.estado === 'closed' ? '#F44336' : '#4CAF50', // Rojo para cerradas, verde para abiertas
+            backgroundColor: offer.estado === 'closed' ? '#F44336' : '#4CAF50',
             borderColor: offer.estado === 'closed' ? '#D32F2F' : '#388E3C'
           };
         });
@@ -192,7 +226,7 @@ export class DashboardComponent implements OnInit {
           ...this.calendarOptions,
           events: this.calendarEvents
         };
-        console.log('Eventos del calendario:', this.calendarEvents); // Depuración
+        console.log('Eventos del calendario:', this.calendarEvents);
       },
       error: (err) => {
         console.error('Error al cargar eventos del calendario:', err);
@@ -212,39 +246,67 @@ export class DashboardComponent implements OnInit {
     }
   }
 
-  aplicarOferta(idOferta: number): void {
-    this.ofertasService.aplicarOferta(idOferta).subscribe({
+  selectOffer(offer: JobOffer): void {
+    this.selectedOffer = offer;
+    this.isLoadingInscriptions = true;
+    this.ofertasService.getInscripcionesOferta(offer.id).subscribe({
+      next: (inscriptions) => {
+        this.inscriptions = inscriptions;
+        this.isLoadingInscriptions = false;
+      },
+      error: (err) => {
+        console.error('Error al cargar inscripciones:', err);
+        this.toastr.error(err.error?.error || 'Error al cargar las inscripciones', 'Error');
+        this.isLoadingInscriptions = false;
+      }
+    });
+  }
+
+  asociarTrabajador(idTrabajador: number, idOferta: number): void {
+    this.ofertasService.asociarTrabajadorOferta(idTrabajador, idOferta).subscribe({
       next: () => {
-        this.toastr.success('¡Aplicación exitosa!', 'Éxito');
+        this.toastr.success('Trabajador asignado correctamente', 'Éxito');
+        this.selectOffer(this.selectedOffer!);
+        this.loadOffers();
+      },
+      error: (err) => {
+        console.error('Error al asignar trabajador:', err);
+        this.toastr.error(err.error?.error || 'Error al asignar el trabajador', 'Error');
+      }
+    });
+  }
+
+  aplicarOferta(idOferta: number): void {
+    this.ofertasService.inscribirseOferta(idOferta).subscribe({
+      next: () => {
+        this.toastr.success('¡Inscripción exitosa!', 'Éxito');
         this.jobOffers = this.jobOffers.map(offer =>
-          offer.id === idOferta ? { ...offer, aplicada: true, estado: 'closed' } : offer
+          offer.id === idOferta ? { ...offer, inscrita: true } : offer
         );
         this.filterOffers();
         this.loadCalendarEvents();
       },
       error: (err) => {
-        console.error('Error al aplicar:', err);
-        this.toastr.error(err.error?.error || 'Error al aplicar a la oferta', 'Error');
+        console.error('Error al inscribirse:', err);
+        this.toastr.error(err.error?.error || 'Error al inscribirse a la oferta', 'Error');
       }
     });
   }
 
   desaplicarOferta(idOferta: number): void {
-    this.ofertasService.desaplicarOferta(idOferta).subscribe({
-        next: () => {
-            this.toastr.success('¡Oferta desaplicada correctamente!', 'Éxito');
-            // Actualizar la lista de ofertas aplicadas
-            this.appliedOffers = this.appliedOffers.filter(offer => offer.id !== idOferta);
-            // Recargar las ofertas disponibles y el calendario
-            this.loadOffers();
-            this.loadCalendarEvents();
-        },
-        error: (err) => {
-            console.error('Error al desaplicar:', err);
-            this.toastr.error(err.error?.error || 'Error al desaplicar la oferta', 'Error');
-        }
+    this.ofertasService.desinscribirseOferta(idOferta).subscribe({
+      next: () => {
+        this.toastr.success('¡Inscripción eliminada correctamente!', 'Éxito');
+        this.appliedOffers = this.appliedOffers.filter(offer => offer.id !== idOferta);
+        this.loadOffers();
+        this.loadCalendarEvents();
+      },
+      error: (err) => {
+        console.error('Error al desinscribirse:', err);
+        this.toastr.error(err.error?.error || 'Error al desinscribirse de la oferta', 'Error');
+      }
     });
-}
+  }
 
   loadDocuments(): void {
     this.isLoadingDocuments = true;
@@ -348,6 +410,12 @@ export class DashboardComponent implements OnInit {
   switchToProfile(): void {
     this.viewMode = 'profile';
     this.router.navigate(['/profile']);
+    this.loadContent();
+  }
+
+  switchToAdmin(): void {
+    this.viewMode = 'admin';
+    this.router.navigate(['/admin-offers']);
     this.loadContent();
   }
 

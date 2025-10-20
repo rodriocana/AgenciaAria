@@ -12,7 +12,16 @@ interface JobOffer {
   creado_por: number;
   fecha_creacion: string;
   estado: 'open' | 'closed';
-  aplicada: boolean;
+  inscrita: boolean;
+}
+
+interface Inscription {
+  id: number;
+  id_trabajador: number;
+  id_oferta: number;
+  fecha_inscripcion: string;
+  nombre: string;
+  correo: string;
 }
 
 interface TrabajadorOferta {
@@ -37,27 +46,40 @@ export class OfertasService {
     private authService: AuthService
   ) {}
 
-  // Obtener todas las ofertas
+  // Obtener todas las ofertas (para /dashboard)
   getOfertas(): Observable<JobOffer[]> {
     const token = this.authService.getToken();
+    if (!token) {
+      return throwError(() => new Error('No hay token de autenticación'));
+    }
     const headers = new HttpHeaders({
       'Authorization': `Bearer ${token}`
     });
     return this.http.get<JobOffer[]>(`${this.apiUrl}/offers`, { headers });
   }
 
-  // Aplicar a una oferta
-  aplicarOferta(idOferta: number): Observable<any> {
+  // Obtener ofertas con al menos un inscrito (para /admin-offers)
+  getAdminOffers(): Observable<JobOffer[]> {
     const token = this.authService.getToken();
     if (!token) {
       return throwError(() => new Error('No hay token de autenticación'));
     }
+    const headers = new HttpHeaders({
+      'Authorization': `Bearer ${token}`
+    });
+    return this.http.get<JobOffer[]>(`${this.apiUrl}/admin-offers`, { headers });
+  }
 
+  // Resto de los métodos sin cambios
+  inscribirseOferta(idOferta: number): Observable<any> {
+    const token = this.authService.getToken();
+    if (!token) {
+      return throwError(() => new Error('No hay token de autenticación'));
+    }
     const user = this.authService.getUser();
     if (!user || !user.id) {
       return throwError(() => new Error('Usuario no autenticado o ID no disponible'));
     }
-
     const headers = new HttpHeaders({
       'Authorization': `Bearer ${token}`
     });
@@ -65,69 +87,93 @@ export class OfertasService {
       id_trabajador: user.id,
       id_oferta: idOferta
     };
-    return this.http.post(`${this.apiUrl}/trabajador-oferta`, trabajadorOferta, { headers });
+    return this.http.post(`${this.apiUrl}/inscripciones-oferta`, { id_oferta: idOferta }, { headers });
   }
 
-  // Desaplicar una oferta
-desaplicarOferta(idOferta: number): Observable<any> {
+  desinscribirseOferta(idOferta: number): Observable<any> {
     const token = this.authService.getToken();
     if (!token) {
-        return throwError(() => new Error('No hay token de autenticación'));
+      return throwError(() => new Error('No hay token de autenticación'));
     }
-
     const headers = new HttpHeaders({
-        'Authorization': `Bearer ${token}`
+      'Authorization': `Bearer ${token}`
     });
     const body = { id_oferta: idOferta };
-    return this.http.delete(`${this.apiUrl}/trabajador-oferta`, { headers, body });
-}
+    return this.http.delete(`${this.apiUrl}/inscripciones-oferta`, { headers, body });
+  }
 
-  // Obtener ofertas aplicadas por el trabajador
   getOfertasAplicadas(idTrabajador: number): Observable<JobOffer[]> {
     const token = this.authService.getToken();
+    if (!token) {
+      return throwError(() => new Error('No hay token de autenticación'));
+    }
     const headers = new HttpHeaders({
       'Authorization': `Bearer ${token}`
     });
     return this.http.get<JobOffer[]>(`${this.apiUrl}/trabajador-oferta/${idTrabajador}`, { headers });
   }
 
-  // Obtener fechas de ofertas para el calendario
   getOfertasParaCalendario(idTrabajador?: number): Observable<JobOffer[]> {
     const token = this.authService.getToken();
+    if (!token) {
+      return throwError(() => new Error('No hay token de autenticación'));
+    }
     const headers = new HttpHeaders({
       'Authorization': `Bearer ${token}`
     });
 
     if (idTrabajador) {
-      // Para trabajadores, combinar ofertas abiertas y aplicadas
       return forkJoin([
-        this.http.get<JobOffer[]>(`${this.apiUrl}/offers`, { headers }), // Todas las ofertas
-        this.http.get<JobOffer[]>(`${this.apiUrl}/trabajador-oferta/${idTrabajador}`, { headers }) // Ofertas aplicadas
+        this.http.get<JobOffer[]>(`${this.apiUrl}/offers`, { headers }),
+        this.http.get<JobOffer[]>(`${this.apiUrl}/trabajador-oferta/${idTrabajador}`, { headers })
       ]).pipe(
-        map(([allOffers, appliedOffers]) => {
-          const appliedOfferIds = new Set(appliedOffers.map(offer => offer.id));
+        map(([allOffers, confirmedOffers]) => {
+          const confirmedOfferIds = new Set(confirmedOffers.map(offer => offer.id));
           return allOffers.map(offer => ({
             ...offer,
-            aplicada: appliedOfferIds.has(offer.id) ? true : offer.aplicada || false
+            inscrita: offer.inscrita || confirmedOfferIds.has(offer.id)
           }));
         })
       );
     } else {
-      // Para administradores, obtener todas las ofertas
       return this.http.get<JobOffer[]>(`${this.apiUrl}/offers`, { headers });
     }
   }
 
-  // Crear una nueva oferta
   crearOferta(oferta: NuevaOferta): Observable<any> {
     const token = this.authService.getToken();
     if (!token) {
       return throwError(() => new Error('No hay token de autenticación'));
     }
-
     const headers = new HttpHeaders({
       'Authorization': `Bearer ${token}`
     });
     return this.http.post(`${this.apiUrl}/offers`, oferta, { headers });
+  }
+
+  getInscripcionesOferta(idOferta: number): Observable<Inscription[]> {
+    const token = this.authService.getToken();
+    if (!token) {
+      return throwError(() => new Error('No hay token de autenticación'));
+    }
+    const headers = new HttpHeaders({
+      'Authorization': `Bearer ${token}`
+    });
+    return this.http.get<Inscription[]>(`${this.apiUrl}/inscripciones-oferta/${idOferta}`, { headers });
+  }
+
+  asociarTrabajadorOferta(idTrabajador: number, idOferta: number): Observable<any> {
+    const token = this.authService.getToken();
+    if (!token) {
+      return throwError(() => new Error('No hay token de autenticación'));
+    }
+    const headers = new HttpHeaders({
+      'Authorization': `Bearer ${token}`
+    });
+    return this.http.post(
+      `${this.apiUrl}/asociar-trabajador-oferta`,
+      { id_trabajador: idTrabajador, id_oferta: idOferta },
+      { headers }
+    );
   }
 }
