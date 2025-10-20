@@ -1,14 +1,25 @@
-.login-container {
+/* .login-container {
   display: flex;
   justify-content: center;
   align-items: center;
   min-height: 100vh;
   background: linear-gradient(166deg, #ffbbd7 0%, #ffffff 100%);
   padding: 1.5rem;
+} */
+
+.login-container {
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  min-height: 100vh;
+  background: linear-gradient(166deg, #ffbbd7 0%, #ffffff 100%);
+  background-image: url(https://images.pexels.com/photos/548084/pexels-photo-548084.jpeg);
+  background-size: cover;
+  background-repeat: no-repeat;
 }
 
 .login-card {
-  background: #ffffff;
+  background: #ffffffe8;
   border-radius: 12px;
   box-shadow: 0 6px 24px rgba(0, 0, 0, 0.15);
   padding: 2rem;

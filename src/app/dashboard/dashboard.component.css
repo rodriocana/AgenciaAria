@@ -1,41 +1,48 @@
-
 .dashboard-container {
   display: flex;
   min-height: 100vh;
   background: #f1f5f9;
+  /* background-image: url(https://images.pexels.com/photos/548084/pexels-photo-548084.jpeg); */
+  background-size: cover;
+  background-repeat: no-repeat;
+  background-position: center;
 }
 
 .hamburger {
   display: none;
   position: fixed;
   top: 1rem;
-  left: 1rem;
+  left: 0.3rem;
   z-index: 1000;
   background: none;
   border: none;
   cursor: pointer;
   padding: 0.5rem;
+  border-radius: 8px;
 }
 
 .hamburger span {
   display: block;
   width: 24px;
   height: 3px;
-  background: #1e293b;
+  background: #ffffff;
   margin: 5px 0;
   transition: all 0.3s;
 }
 
 .hamburger.active span:nth-child(1) {
   transform: rotate(45deg) translate(5px, 5px);
+  background-color: #000000;
 }
 
 .hamburger.active span:nth-child(2) {
   opacity: 0;
+  background-color: #000000;
 }
 
 .hamburger.active span:nth-child(3) {
   transform: rotate(-45deg) translate(7px, -7px);
+  background-color: #000000;
 }
 
 .sidebar {
@@ -44,6 +51,10 @@
   border-right: 1px solid #e2e8f0;
   padding: 1.5rem;
   transition: transform 0.3s ease-in-out;
+  position: fixed;
+  top: 0;
+  bottom: 0;
+  z-index: 999;
 }
 
 .sidebar .sidebar-header {
@@ -75,6 +86,17 @@
   transition: background 0.3s;
 }
 
+.info-card{
+      background: #ffffff;
+    border-radius: 16px;
+    box-shadow: 0 4px 12px rgba(255, 255, 255, 0.1);
+    padding: 1.5rem;
+    width: 290px;
+    height: fit-content;
+    transition: transform 0.3s;
+}
+
+
 .sidebar .menu a:hover {
   background: #e0e7ff;
 }
@@ -85,60 +107,123 @@
 }
 
 .main-content {
-  flex: 1;
-  padding: 2rem;
-  overflow-y: auto;
+     flex: 1;
+    margin-left: 299px;
+    padding: 3rem;
+    background: linear-gradient(304deg, rgb(255 255 255 / 25%), rgb(255 153 224 / 61%));
+    overflow-y: auto;
 }
 
 .header {
   margin-bottom: 2rem;
+  text-align: center;
 }
 
 .header h1 {
-  color: #1e293b;
+  color: #ffffff;
   font-size: 1.8rem;
   margin-bottom: 0.5rem;
 }
 
 .header p {
-  color: #64748b;
+  color: #1e293b;
   font-size: 1rem;
 }
 
-.job-offers h2 {
-  color: #1e293b;
-  font-size: 1.5rem;
-  margin-bottom: 1.5rem;
+.job-offers,
+.user-profile {
+  /* margin-bottom: 2rem; */
 }
 
-.offers-grid {
+.section-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  /* margin-bottom: 1.5rem; */
+}
+
+.section-header h2 {
+  color: #ffffff;
+  font-size: 1.5rem;
+}
+
+.add-label {
+  font-size: 1rem;
+  color: #1e293b;
+  font-weight: 500;
+}
+
+.no-offers,
+.no-data,
+.no-documents {
+    color: #64748b;
+    font-size: 1rem;
+    text-align: center;
+    margin: 2rem 0;
+    height: 95px;
+    background: #ffffffd8;
+    border-radius: 8px;
+    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
+    padding: 2rem;
+}
+
+.offers-grid,
+.documents-grid {
   display: grid;
   grid-template-columns: repeat(auto-fill, minmax(300px, 1fr));
   gap: 1.5rem;
 }
 
-.offer-card {
-  background: #ffffff;
-  border-radius: 8px;
-  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
-  padding: 1.5rem;
-  transition: transform 0.3s;
+.offer-card,
+.document-card {
+    background: #ffffffd8;
+    border-radius: 16px;
+    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
+    padding: 1.5rem;
+    width: 290px;
+    height: 240px;
+    transition: transform 0.3s;
 }
 
-.offer-card:hover {
+/* Estilos para bordes de las tarjetas según el estado de la oferta */
+.offer-card[data-status="open"] {
+    border: 0px solid #21aa5f; /* más ancho */
+}
+
+.offer-card[data-status="closed"] {
+    border: 0px solid #df2626; /* más fino */
+}
+/* Asegurar que el borde se vea bien en hover */
+
+
+
+.offer-card:hover,
+.info-card:hover,
+.document-card:hover {
   transform: translateY(-4px);
 }
 
-.offer-card h3 {
+.offer-card h3,
+.info-card h3,
+.document-card h3 {
   color: #1e293b;
   font-size: 1.2rem;
   margin-bottom: 0.5rem;
 }
 
-.offer-card p {
-  color: #64748b;
+.offer-card p,
+.info-card p,
+.document-card p {
+  color: #000000;
   font-size: 0.9rem;
   margin-bottom: 1rem;
+}
+
+.offer-card p strong,
+.info-card p strong,
+.document-card p strong {
+  color: #1e293b;
+  font-weight: 500;
 }
 
 .offer-details {
@@ -146,27 +231,29 @@
   flex-direction: column;
   gap: 0.5rem;
   font-size: 0.85rem;
-  color: #64748b;
-  margin-bottom: 1rem;
+  color: #000000;
 }
 
 .offer-details .status {
-  padding: 0.3rem 0.6rem;
-  border-radius: 12px;
-  font-weight: 500;
+ padding: 0.3rem 0.6rem;
+  margin-bottom: 9px;
+    border-radius: 12px;
+    font-weight: 500;
 }
 
 .offer-details .status.open {
   background: #d1fae5;
   color: #065f46;
+  margin-bottom: 12px;
 }
 
 .offer-details .status.closed {
-  background: #fee2e2;
-  color: #991b1b;
+    background: #fee2e2;
+    color: #ff0000;
 }
 
-.apply-button {
+.apply-button,
+.submit-button {
   width: 100%;
   padding: 0.8rem;
   background: #4f46e5;
@@ -178,26 +265,294 @@
   transition: background 0.3s;
 }
 
-.apply-button:hover {
+/* Estilo para el botón de desaplicar */
+.apply-button.desaplicar {
+    background: #F44336; /* Rojo para diferenciar del botón Aplicar */
+    color: #ffffff;
+    border: none;
+    border-radius: 6px;
+    font-size: 0.9rem;
+    padding: 0.8rem;
+    cursor: pointer;
+    transition: background 0.3s;
+    width: 100%;
+}
+
+.apply-button.desaplicar:hover:not(:disabled) {
+    background: #D32F2F; /* Tono más oscuro al pasar el cursor */
+}
+
+.apply-button.desaplicar:disabled {
+    background: #94a3b8; /* Gris para estado deshabilitado, igual que otros botones */
+    cursor: not-allowed;
+}
+
+.apply-button:hover,
+.submit-button:hover {
   background: #4338ca;
 }
 
-.apply-button:disabled {
+.apply-button:disabled,
+.submit-button:disabled {
   background: #94a3b8;
   cursor: not-allowed;
+}
+
+.download-link {
+  display: inline-block;
+  color: #4f46e5;
+  font-size: 0.9rem;
+  text-decoration: none;
+  padding: 0.5rem 1rem;
+  border-radius: 6px;
+  transition: background 0.3s;
+}
+
+.download-link:hover {
+  background: #e0e7ff;
+}
+
+.add-offer-container {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+}
+
+.add-button {
+  background: #4f46e5;
+  color: #ffffff;
+  padding: 0.5rem 1rem;
+  border: none;
+  border-radius: 6px;
+  font-size: 1.2rem;
+  cursor: pointer;
+  transition: background 0.3s;
+}
+
+.add-button:hover {
+  background: #4338ca;
+}
+
+.modal {
+  position: fixed;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 100%;
+  background: rgba(0, 0, 0, 0.5);
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  z-index: 1000;
+}
+
+.modal-content {
+  background: #ffffff;
+  padding: 2rem;
+  border-radius: 8px;
+  width: 100%;
+  max-width: 500px;
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.2);
+}
+
+.modal-content h2 {
+  margin-bottom: 1.5rem;
+  color: #1e293b;
+}
+
+.form-group {
+  margin-bottom: 1rem;
+}
+
+.form-group label {
+  display: block;
+  margin-bottom: 0.5rem;
+  color: #1e293b;
+  font-weight: 500;
+}
+
+.form-group input,
+.form-group textarea {
+     width: 405px;
+    padding: 0.8rem;
+    border: 1px solid #e2e8f0;
+    border-radius: 6px;
+    font-size: 1rem;
+}
+
+.form-group input[type="file"] {
+  background: #ffffff;
+}
+
+.form-group input[type="file"]:focus {
+  outline: none;
+  border-color: #4f46e5;
+  box-shadow: 0 0 0 3px rgba(79, 70, 229, 0.1);
+}
+
+.form-group textarea {
+  min-height: 100px;
+  resize: vertical;
+}
+
+.form-actions {
+  display: flex;
+  justify-content: flex-end;
+  gap: 1rem;
+  margin-top: 1.5rem;
+}
+
+.cancel-button,
+.submit-button {
+     padding: 0.8rem 1.5rem;
+    border: none;
+    width: 200px;
+    border-radius: 6px;
+    cursor: pointer;
+    font-size: 1rem;
+}
+
+.cancel-button {
+  background: #e2e8f0;
+  color: #1e293b;
+}
+
+.cancel-button:hover {
+  background: #d1d5db;
+}
+
+.spinner {
+  text-align: center;
+  padding: 1.5rem;
+  font-size: 1rem;
+  color: #64748b;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.spinner::before {
+  content: '';
+  width: 20px;
+  height: 20px;
+  border: 2px solid #4f46e5;
+  border-top-color: transparent;
+  border-radius: 50%;
+  animation: spin 1s linear infinite;
+  margin-right: 0.5rem;
+}
+
+/* Estilos para FullCalendar */
+.fc {
+  background-color: #fff;
+  border-radius: 8px;
+  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+  padding: 10px;
+}
+
+.fc .fc-daygrid-day.fc-day-has-event {
+  background-color: #e8f5e9; /* Fondo verde claro para días con ofertas abiertas */
+}
+
+.fc .fc-event {
+  color: #fff;
+  font-size: 0.9em;
+  border-radius: 4px;
+}
+
+.fc .fc-toolbar-title {
+  font-size: 1.4em !important;
+  margin: 0;
+  color: black;
+}
+.fc .fc-event.aplicada {
+  background-color: #F44336 !important; /* Rojo para ofertas aplicadas */
+  border-color: #D32F2F !important;
+}
+
+
+
+.offers-calendar-container {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 20px;
+}
+
+.offers-grid {
+  flex: 1;
+  min-width: 300px;
+}
+
+.calendar-container {
+  flex: 1;
+  min-width: 300px;
+  max-width: 400px;
+}
+
+.filter-container {
+  margin-bottom: 1.5rem;
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+}
+
+.filter-container label {
+  color: #1e293b;
+  font-weight: 500;
+}
+
+.filter-container select {
+  padding: 0.5rem;
+  border: 1px solid #e2e8f0;
+  border-radius: 6px;
+  font-size: 1rem;
+  background: #ffffff;
+  cursor: pointer;
+}
+
+.filter-container select:focus {
+  outline: none;
+  border-color: #ffffff;
+  box-shadow: 0 0 0 3px rgba(79, 70, 229, 0.1);
 }
 
 @media (max-width: 768px) {
   .hamburger {
     display: block;
+    border-radius: 8px;
   }
 
+  .offers-calendar-container {
+    flex-direction: column;
+  }
 
-  .header{
-        color: #64748b;
+     .calendar-container {
+        max-width: 100%;
+        transform: translateX(-13px);
+    }
+
+    .form-group input, .form-group textarea {
+    width: 334px;
+    padding: 0.8rem;
+    border: 1px solid #e2e8f0;
+    border-radius: 6px;
     font-size: 1rem;
-    margin-left: 87px;
+}
+
+
+
+  .hamburger span {
+    background: #ffffff;
   }
+
+   .offer-card[data-status="open"],
+    .offer-card[data-status="closed"] {
+        border-width: 1px; /* Borde más delgado en móviles para mejor proporción */
+    }
+
+    .job-offers, .user-profile {
+    margin-left: 18px;
+}
 
   .sidebar {
     position: fixed;
@@ -213,19 +568,41 @@
   }
 
   .main-content {
-    padding: 1rem;
+    margin-left: 0;
+    padding: 2rem;
   }
 
   .header h1 {
     font-size: 1.5rem;
   }
 
-  .job-offers h2 {
+  .job-offers h2,
+  .user-profile h2 {
     font-size: 1.3rem;
   }
 
-  .offers-grid {
+  .modal-content {
+    background: #ffffff;
+    position: absolute;
+    padding: 3rem;
+    border-radius: 8px;
+    width: 69%;
+    top: 127px;
+    max-width: 500px;
+    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.2);
   }
+
+  .fc {
+    display: flex;
+    flex-direction: column;
+    font-size: 0.8em;
+}
+
+.apply-button.desaplicar {
+        padding: 0.6rem;
+        font-size: 0.85rem;
+    }
+
 }
 
 @media (max-width: 480px) {
@@ -233,11 +610,29 @@
     max-width: 120px;
   }
 
+  .apply-button.desaplicar {
+        padding: 0.6rem;
+        font-size: 0.85rem;
+    }
+
   .sidebar {
     width: 200px;
   }
 
-  .offer-card {
+    .offer-card[data-status="open"],
+    .offer-card[data-status="closed"] {
+        border-width: 0px; /* Aún más delgado en pantallas muy pequeñas */
+    }
+
+  .offer-card,
+  .info-card,
+  .document-card {
     padding: 1rem;
+  }
+}
+
+@keyframes spin {
+  to {
+    transform: rotate(360deg);
   }
 }

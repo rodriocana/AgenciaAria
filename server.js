@@ -118,11 +118,21 @@ app.get('/api/profile', authenticateToken, async (req, res) => {
 });
 
 // Endpoint: Obtener ofertas de trabajo
+
 app.get('/api/offers', authenticateToken, async (req, res) => {
     try {
         const connection = await mysql.createConnection(dbConfig);
+        const idTrabajador = req.user.id;
+
+        // Obtener todas las ofertas y verificar si el usuario ha aplicado a cada una
         const [offers] = await connection.execute(
-            'SELECT id, titulo, descripcion, fecha, creado_por, fecha_creacion, estado FROM ofertas_trabajo'
+            `SELECT o.id, o.titulo, o.descripcion, DATE_FORMAT(o.fecha, '%Y-%m-%d') AS fecha, o.creado_por, o.fecha_creacion, o.estado,
+                    EXISTS (
+                        SELECT 1 FROM trabajador_oferta tof
+                        WHERE tof.id_oferta = o.id AND tof.id_trabajador = ?
+                    ) AS aplicada
+             FROM ofertas_trabajo o`,
+            [idTrabajador]
         );
 
         await connection.end();
@@ -130,6 +140,179 @@ app.get('/api/offers', authenticateToken, async (req, res) => {
     } catch (error) {
         console.error('Error al obtener ofertas:', error);
         res.status(500).json({ error: 'Error al obtener las ofertas de trabajo' });
+    }
+});
+
+// Endpoint: Aplicar a una oferta
+app.post('/api/trabajador-oferta', authenticateToken, async (req, res) => {
+    const { id_oferta } = req.body;
+    const id_trabajador = req.user.id; // Obtenido del token JWT
+
+    if (!id_oferta) {
+        return res.status(400).json({ error: 'Falta id_oferta en la solicitud' });
+    }
+
+    try {
+        const connection = await mysql.createConnection(dbConfig);
+
+        // Verificar si la oferta existe y está abierta
+        const [offers] = await connection.execute(
+            'SELECT estado FROM ofertas_trabajo WHERE id = ?',
+            [id_oferta]
+        );
+        if (offers.length === 0) {
+            await connection.end();
+            return res.status(404).json({ error: 'Oferta no encontrada' });
+        }
+        if (offers[0].estado === 'closed') {
+            await connection.end();
+            return res.status(400).json({ error: 'La oferta ya está cerrada' });
+        }
+
+        // Verificar si el trabajador ya aplicó a esta oferta
+        const [existingApplication] = await connection.execute(
+            'SELECT id FROM trabajador_oferta WHERE id_trabajador = ? AND id_oferta = ?',
+            [id_trabajador, id_oferta]
+        );
+        if (existingApplication.length > 0) {
+            await connection.end();
+            return res.status(400).json({ error: 'Ya has aplicado a esta oferta' });
+        }
+
+        // Iniciar transacción para asegurar consistencia
+        await connection.beginTransaction();
+        try {
+            // Insertar la aplicación en trabajador_oferta
+            await connection.execute(
+                'INSERT INTO trabajador_oferta (id_trabajador, id_oferta) VALUES (?, ?)',
+                [id_trabajador, id_oferta]
+            );
+
+            // Cambiar el estado de la oferta a "closed"
+            await connection.execute(
+                'UPDATE ofertas_trabajo SET estado = "closed" WHERE id = ?',
+                [id_oferta]
+            );
+
+            await connection.commit();
+            await connection.end();
+            res.status(201).json({ message: 'Aplicación registrada correctamente' });
+        } catch (error) {
+            await connection.rollback();
+            await connection.end();
+            console.error('Error al registrar aplicación:', error);
+            res.status(500).json({ error: 'Error al registrar la aplicación' });
+        }
+    } catch (error) {
+        console.error('Error al procesar la solicitud:', error);
+        res.status(500).json({ error: 'Error en el servidor' });
+    }
+});
+
+// Endpoint: Desaplicar una oferta
+app.delete('/api/trabajador-oferta', authenticateToken, async (req, res) => {
+    const { id_oferta } = req.body;
+    const id_trabajador = req.user.id; // Obtenido del token JWT
+
+    if (!id_oferta) {
+        return res.status(400).json({ error: 'Falta id_oferta en la solicitud' });
+    }
+
+    try {
+        const connection = await mysql.createConnection(dbConfig);
+
+        // Verificar si el trabajador ha aplicado a esta oferta
+        const [existingApplication] = await connection.execute(
+            'SELECT id FROM trabajador_oferta WHERE id_trabajador = ? AND id_oferta = ?',
+            [id_trabajador, id_oferta]
+        );
+        if (existingApplication.length === 0) {
+            await connection.end();
+            return res.status(400).json({ error: 'No has aplicado a esta oferta' });
+        }
+
+        // Iniciar transacción para asegurar consistencia
+        await connection.beginTransaction();
+        try {
+            // Eliminar la aplicación de la tabla trabajador_oferta
+            await connection.execute(
+                'DELETE FROM trabajador_oferta WHERE id_trabajador = ? AND id_oferta = ?',
+                [id_trabajador, id_oferta]
+            );
+
+            // Cambiar el estado de la oferta a "open"
+            await connection.execute(
+                'UPDATE ofertas_trabajo SET estado = "open" WHERE id = ?',
+                [id_oferta]
+            );
+
+            await connection.commit();
+            await connection.end();
+            res.status(200).json({ message: 'Aplicación eliminada correctamente' });
+        } catch (error) {
+            await connection.rollback();
+            await connection.end();
+            console.error('Error al desaplicar la oferta:', error);
+            res.status(500).json({ error: 'Error al desaplicar la oferta' });
+        }
+    } catch (error) {
+        console.error('Error al procesar la solicitud:', error);
+        res.status(500).json({ error: 'Error en el servidor' });
+    }
+});
+
+
+// Endpoint: Obtener ofertas aplicadas por un trabajador
+app.get('/api/trabajador-oferta/:idTrabajador', authenticateToken, async (req, res) => {
+    const idTrabajador = req.params.idTrabajador;
+
+    if (req.user.id != idTrabajador && req.user.rol !== 'administrador') {
+        return res.status(403).json({ error: 'No tienes permiso para ver estas aplicaciones' });
+    }
+
+    try {
+        const connection = await mysql.createConnection(dbConfig);
+        const [offers] = await connection.execute(
+            `SELECT o.id, o.titulo, o.descripcion, DATE_FORMAT(o.fecha, '%Y-%m-%d') AS fecha, o.creado_por, o.fecha_creacion, o.estado, TRUE AS aplicada
+             FROM ofertas_trabajo o
+             INNER JOIN trabajador_oferta tof ON o.id = tof.id_oferta
+             WHERE tof.id_trabajador = ?`,
+            [idTrabajador]
+        );
+
+        await connection.end();
+        res.json(offers);
+    } catch (error) {
+        console.error('Error al obtener aplicaciones:', error);
+        res.status(500).json({ error: 'Error al obtener las aplicaciones' });
+    }
+});
+
+// Endpoint: Crear una oferta de trabajo (solo administradores)
+app.post('/api/offers', authenticateToken, async (req, res) => {
+    if (req.user.rol !== 'administrador') {
+        return res.status(403).json({ error: 'Acceso denegado, solo administradores' });
+    }
+
+    const { titulo, descripcion, fecha } = req.body;
+    const creado_por = req.user.id;
+
+    if (!titulo || !descripcion || !fecha) {
+        return res.status(400).json({ error: 'Faltan campos requeridos: titulo, descripcion, fecha' });
+    }
+
+    try {
+        const connection = await mysql.createConnection(dbConfig);
+        await connection.execute(
+            'INSERT INTO ofertas_trabajo (titulo, descripcion, fecha, creado_por, estado) VALUES (?, ?, ?, ?, ?)',
+            [titulo, descripcion, fecha, creado_por, 'open']
+        );
+
+        await connection.end();
+        res.status(201).json({ message: 'Oferta creada correctamente' });
+    } catch (error) {
+        console.error('Error al crear oferta:', error);
+        res.status(500).json({ error: 'Error al crear la oferta' });
     }
 });
 

@@ -5,7 +5,7 @@ import { DashboardComponent } from "./dashboard/dashboard.component";
 
 @Component({
   selector: 'app-root',
-  imports: [LoginComponent, DashboardComponent, RouterModule],
+  imports: [RouterModule],
   templateUrl: './app.component.html',
   styleUrl: './app.component.css'
 })
