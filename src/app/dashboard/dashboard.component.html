@@ -1,0 +1,158 @@
+<div class="dashboard-container">
+  <!-- Menú hamburguesa para móviles -->
+  <button class="hamburger" (click)="toggleMenu()" [class.active]="isMenuOpen" aria-label="Abrir/cerrar menú">
+    <span></span>
+    <span></span>
+    <span></span>
+  </button>
+
+  <!-- Sidebar -->
+  <nav class="sidebar" [class.open]="isMenuOpen" attr.aria-hidden="{{ !isMenuOpen }}">
+    <div class="sidebar-header">
+      <img src="/agencia.png" alt="Agency Logo" class="logo">
+    </div>
+    <ul class="menu">
+      <li><a routerLink="/dashboard" routerLinkActive="active" (click)="toggleMenu(); viewMode = 'available'; loadContent()">Tablón</a></li>
+      <li><a routerLink="/offers" routerLinkActive="active" (click)="toggleMenu(); viewMode = 'applied'; loadContent()">Mis Ofertas de Trabajo</a></li>
+      <li><a routerLink="/profile" routerLinkActive="active" (click)="switchToProfile(); toggleMenu()">Perfil</a></li>
+      <li><a href="javascript:void(0)" (click)="logout(); toggleMenu()">Cerrar Sesión</a></li>
+    </ul>
+  </nav>
+
+  <!-- Contenido principal -->
+  <main class="main-content">
+    <header class="header">
+      <h1>{{ viewMode === 'available' ? 'Tablón de ofertas' : viewMode === 'applied' ? 'Mis Ofertas de Trabajo' : 'Mi Perfil' }}</h1>
+      <p>Bienvenido, {{ (user?.nombre) || 'Usuario' }}</p>
+    </header>
+
+    <!-- Ofertas disponibles -->
+    <section class="job-offers" *ngIf="viewMode === 'available'">
+      <div class="section-header">
+        <h2>Ofertas de Trabajo Disponibles</h2>
+        <div class="add-offer-container" *ngIf="authService.getUser()?.rol === 'administrador'">
+
+          <button class="add-button" (click)="openModal()">Añadir oferta +</button>
+        </div>
+      </div>
+      <div class="filter-container">
+        <label for="offer-filter">Filtrar por estado:</label>
+        <select id="offer-filter" [(ngModel)]="offerFilter" (change)="filterOffers()">
+          <option value="all">Todas</option>
+          <option value="open">Abiertas</option>
+          <option value="closed">Cerradas</option>
+        </select>
+      </div>
+      <div class="offers-calendar-container">
+        <div class="offers-grid">
+          <div *ngIf="filteredOffers.length === 0" class="no-offers">No hay ofertas disponibles para el filtro seleccionado.</div>
+          <div class="offer-card" *ngFor="let offer of filteredOffers" [attr.data-status]="offer.estado">
+            <h3>{{ offer.titulo }}</h3>
+            <p>{{ offer.descripcion }}</p>
+            <div class="offer-details">
+                <span>Fecha: {{ offer.fecha }}</span>
+                <span>Creado por: {{ offer.creado_por }}</span>
+                <span>Creado el: {{ offer.fecha_creacion | date:'short' }}</span>
+                <span class="status" [class.open]="offer.estado === 'open'" [class.closed]="offer.estado === 'closed'">
+                    {{ offer.estado === 'open' ? 'Abierta' : 'Cerrada' }}
+                </span>
+            </div>
+                  <button *ngIf="authService.getUser()?.rol !== 'administrador'" class="apply-button" (click)="aplicarOferta(offer.id)" [disabled]="offer.estado === 'closed' || offer.aplicada">
+            {{ offer.aplicada ? 'Aplicada' : 'Aplicar' }}
+        </button>
+        </div>
+        </div>
+        <div class="calendar-container">
+          <full-calendar [options]="calendarOptions"></full-calendar>
+        </div>
+      </div>
+    </section>
+
+    <!-- Ofertas aplicadas -->
+    <section class="job-offers" *ngIf="viewMode === 'applied' && authService.getUser()?.rol === 'trabajador'">
+    <h2>Mis Ofertas de Trabajo</h2>
+    <div *ngIf="appliedOffers.length === 0" class="no-offers">No has aplicado a ninguna oferta.</div>
+    <div class="offers-grid">
+        <div class="offer-card" *ngFor="let offer of appliedOffers">
+            <h3>{{ offer.titulo }}</h3>
+            <p>{{ offer.descripcion }}</p>
+            <div class="offer-details">
+                <span>Fecha: {{ offer.fecha }}</span>
+                <span>Creado por: {{ offer.creado_por }}</span>
+                <span>Creado el: {{ offer.fecha_creacion | date:'short' }}</span>
+                <span class="status" [class.open]="offer.estado === 'open'" [class.closed]="offer.estado === 'closed'">
+                    {{ offer.estado === 'open' ? 'Abierta' : 'Cerrada' }}
+                </span>
+            </div>
+           <button class="apply-button desaplicar" (click)="desaplicarOferta(offer.id)" [disabled]="offer.estado === 'open'">
+            Desaplicar
+        </button>
+        </div>
+    </div>
+</section>
+
+    <!-- Perfil -->
+    <section class="user-profile" *ngIf="viewMode === 'profile'">
+      <div class="section-header">
+        <h2>Datos Personales</h2>
+      </div>
+      <div *ngIf="isLoading" class="spinner">Cargando...</div>
+      <div *ngIf="!isLoading && user" class="info-card">
+        <p><strong>Nombre:</strong> {{ user.nombre }}</p>
+        <p><strong>Correo:</strong> {{ user.correo }}</p>
+        <p><strong>Rol:</strong> {{ user.rol | titlecase }}</p>
+      </div>
+      <div *ngIf="!isLoading && !user" class="no-data">No se pudieron cargar los datos del usuario.</div>
+
+      <div class="section-header">
+        <h2>Subir Documentos Firmados</h2>
+      </div>
+      <form (ngSubmit)="uploadDocument()" enctype="multipart/form-data">
+        <div class="form-group">
+          <label for="documento">Seleccionar documento</label>
+          <input id="documento" type="file" accept=".pdf,.doc,.docx" (change)="onFileSelected($event)">
+        </div>
+        <button type="submit" class="submit-button" [disabled]="!selectedFile || isUploading">Subir Documento</button>
+        <div *ngIf="isUploading" class="spinner">Subiendo...</div>
+      </form>
+
+      <div class="section-header">
+        <h2>Mis Documentos</h2>
+      </div>
+      <div *ngIf="isLoadingDocuments" class="spinner">Cargando documentos...</div>
+      <div *ngIf="!isLoadingDocuments && documents.length === 0" class="no-documents">No has subido documentos.</div>
+      <div class="documents-grid" *ngIf="!isLoadingDocuments && documents.length > 0">
+        <div class="document-card" *ngFor="let doc of documents">
+          <p><strong>Nombre:</strong> {{ doc.nombre_documento }}</p>
+          <p><strong>Subido el:</strong> {{ doc.fecha_subida | date:'short' }}</p>
+          <a [href]="doc.url_documento" target="_blank" class="download-link">Descargar</a>
+        </div>
+      </div>
+    </section>
+
+    <!-- Modal para crear oferta -->
+    <div class="modal" *ngIf="isModalOpen">
+      <div class="modal-content">
+        <h2>Crear Nueva Oferta</h2>
+        <form (ngSubmit)="crearOferta()">
+          <div class="form-group">
+            <label for="titulo">Título</label>
+            <input id="titulo" type="text" [(ngModel)]="nuevaOferta.titulo" name="titulo" required>
+          </div>
+          <div class="form-group">
+            <label for="descripcion">Descripción</label>
+            <textarea id="descripcion" [(ngModel)]="nuevaOferta.descripcion" name="descripcion" required></textarea>
+          </div>
+          <div class="form-group">
+            <label for="fecha">Fecha</label>
+            <input id="fecha" type="date" [(ngModel)]="nuevaOferta.fecha" name="fecha" required>
+          </div>
+          <div class="form-actions">
+            <button type="button" class="cancel-button" (click)="closeModal()">Cancelar</button>
+            <button type="submit" class="submit-button">Crear Oferta</button>
+          </div>
+        </form>
+      </div>
+    </div>
+  </main>
+</div>

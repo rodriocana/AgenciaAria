@@ -1,0 +1,54 @@
+<div class="login-container">
+  <div class="login-card">
+    <div class="logo-container">
+      <img src="/agencia.png" alt="Agency Logo" class="logo">
+    </div>
+    <h2>Iniciar Sesión</h2>
+    <p class="subtitle">Bienvenido a la plataforma de gestión de eventos</p>
+
+    <form [formGroup]="loginForm" (ngSubmit)="onLogin()">
+      <div class="form-group">
+        <label for="correo">Correo Electrónico</label>
+        <input
+          type="email"
+          id="correo"
+          formControlName="correo"
+          placeholder="Ingresa tu correo"
+          [class.invalid]="loginForm.get('correo')?.invalid && loginForm.get('correo')?.touched"
+        >
+        <div *ngIf="loginForm.get('correo')?.invalid && loginForm.get('correo')?.touched" class="error">
+          <span *ngIf="loginForm.get('correo')?.errors?.['required']">El correo es requerido</span>
+          <span *ngIf="loginForm.get('correo')?.errors?.['email']">Ingresa un correo válido</span>
+        </div>
+      </div>
+
+      <div class="form-group">
+        <label for="contrasena">Contraseña</label>
+        <input
+          type="password"
+          id="contrasena"
+          formControlName="contrasena"
+          placeholder="Ingresa tu contraseña"
+          [class.invalid]="loginForm.get('contrasena')?.invalid && loginForm.get('contrasena')?.touched"
+        >
+        <div *ngIf="loginForm.get('contrasena')?.invalid && loginForm.get('contrasena')?.touched" class="error">
+          <span *ngIf="loginForm.get('contrasena')?.errors?.['required']">La contraseña es requerida</span>
+          <span *ngIf="loginForm.get('contrasena')?.errors?.['minlength']">Mínimo 6 caracteres</span>
+        </div>
+      </div>
+
+      <div class="error-message" *ngIf="errorMessage">
+        {{ errorMessage }}
+      </div>
+
+      <button type="submit" [disabled]="loginForm.invalid" class="login-button">
+        Iniciar Sesión
+      </button>
+    </form>
+
+    <div class="additional-links">
+      <a href="/forgot-password">¿Olvidaste tu contraseña?</a>
+      <a href="/register">Crear una cuenta</a>
+    </div>
+  </div>
+</div>
