@@ -1,4 +1,8 @@
-/* Existing styles remain unchanged, adding new styles for inscriptions section */
+/* Existing styles remain unchanged, adding new styles for job-offers and header shift */
+body {
+  overflow-x: hidden; /* Prevent horizontal scrolling when content shifts */
+}
+
 .dashboard-container {
   display: flex;
   min-height: 100vh;
@@ -50,7 +54,7 @@
   background: #ffffff;
   border-right: 1px solid #e2e8f0;
   padding: 1.5rem;
-  transition: transform 0.3s ease-in-out;
+  transition: transform 0.8s cubic-bezier(0.4, 0, 0.2, 1); /* Modern easing for sidebar */
   position: fixed;
   top: 0;
   bottom: 0;
@@ -105,18 +109,25 @@
   color: #ffffff;
 }
 
-
-
-
 .main-content {
-    flex: 1;
-    margin-left: 299px;
-    padding: 3rem;
-    background-position: center;
-    background: url(https://images.pexels.com/photos/813362/pexels-photo-813362.jpeg);
-    background-size: cover;
-    /* background: linear-gradient(304deg, rgb(255 255 255 / 25%), rgb(255 153 224 / 61%)); */
-    overflow-y: auto;
+  flex: 1;
+  margin-left: 299px;
+  padding: 3rem;
+  background-position: center;
+  background: url(https://images.pexels.com/photos/813362/pexels-photo-813362.jpeg);
+  background-size: cover;
+  background-attachment: fixed; /* Keep background stationary */
+  overflow-y: auto;
+}
+
+.header,
+.job-offers {
+  transition: transform 0.8s cubic-bezier(0.4, 0, 0.2, 1); /* Modern easing for header and job-offers slide */
+}
+
+.header.shifted,
+.job-offers.shifted {
+  transform: translateX(250px); /* Shift header and job-offers to the right by sidebar width */
 }
 
 .header {
@@ -131,20 +142,14 @@
 }
 
 .header p {
-  color: #1e293b;
+  color: #ffffff;
   font-size: 1rem;
-}
-
-.job-offers,
-.user-profile {
-  /* margin-bottom: 2rem; */
 }
 
 .section-header {
   display: flex;
   justify-content: space-between;
   align-items: center;
-  /* margin-bottom: 1.5rem; */
 }
 
 .section-header h2 {
@@ -184,17 +189,17 @@
 .offer-card,
 .document-card,
 .inscription-card {
-      background: #ffffffd8;
-    border-radius: 16px;
-    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
-    padding: 1.5rem;
-    width: 290px;
-    padding-right: 15px;
-    padding-left: 20px;
-    padding-top: 0px;
-    padding-bottom: 12px;
-    height: fit-content;
-    transition: transform 0.3s;
+  background: #ffffffd8;
+  border-radius: 16px;
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
+  padding: 1.5rem;
+  width: 290px;
+  padding-right: 15px;
+  padding-left: 20px;
+  padding-top: 0px;
+  padding-bottom: 12px;
+  height: fit-content;
+  transition: transform 0.3s;
 }
 
 .offer-card[data-status="open"] {
@@ -476,28 +481,26 @@
   color: black;
 }
 
-.job-offers{
-    background: #ffffffee;
-    /* padding: 29px; */
-    padding-top: 10px;
-    margin-bottom: -21px;
-    padding-left: 28px;
-    padding-right: 31px;
-    padding-bottom: 31px;
-    margin-top: -22px;
-    border-radius: 22px;
+.job-offers {
+  background: #ffffffee;
+  padding-top: 10px;
+  margin-bottom: -21px;
+  padding-left: 28px;
+  padding-right: 31px;
+  padding-bottom: 31px;
+  margin-top: -22px;
+  border-radius: 22px;
 }
 
-.job-offers h2{
-    margin-bottom: 21px;
-    color: black;
+.job-offers h2 {
+  margin-bottom: 21px;
+  color: black;
 }
 
 .offers-calendar-container {
   display: flex;
   flex-wrap: wrap;
   gap: 20px;
-
 }
 
 .offers-grid {
@@ -542,10 +545,10 @@
   margin-top: 2rem;
 }
 
-
 .assigned-status {
   margin-top: 10px;
 }
+
 .status.assigned {
   background-color: #4CAF50;
   color: white;
@@ -553,7 +556,6 @@
   border-radius: 4px;
   font-size: 0.9em;
 }
-
 
 .inscription-card {
   height: auto;
@@ -572,7 +574,7 @@
 
   .calendar-container {
     max-width: 100%;
-    transform: translateX(-13px);
+    transform: translateX(0px);
   }
 
   .form-group input,
@@ -595,7 +597,7 @@
 
   .job-offers,
   .user-profile {
-   margin-left: -5px;
+    margin-left: -5px;
   }
 
   .sidebar {
@@ -662,6 +664,11 @@
 
   .sidebar {
     width: 200px;
+  }
+
+  .header.shifted,
+  .job-offers.shifted {
+    transform: translateX(243px); /* Adjust for smaller sidebar width */
   }
 
   .offer-card[data-status="open"],

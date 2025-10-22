@@ -1,3 +1,4 @@
+<!-- Only showing relevant sections for brevity -->
 <div class="dashboard-container">
   <!-- Menú hamburguesa para móviles -->
   <button class="hamburger" (click)="toggleMenu()" [class.active]="isMenuOpen" aria-label="Abrir/cerrar menú">
@@ -24,17 +25,17 @@
 
   <!-- Contenido principal -->
   <main class="main-content">
-    <header class="header">
+    <header class="header" [class.shifted]="isMenuOpen">
       <h1>{{ viewMode === 'available' ? 'Tablón de ofertas' : viewMode === 'applied' ? 'Mis Ofertas Confirmadas' : viewMode === 'admin' ? 'Gestionar Inscripciones' : 'Mi Perfil' }}</h1>
       <p>Bienvenido, {{ (user?.nombre) || 'Usuario' }}</p>
     </header>
 
     <!-- Ofertas disponibles -->
-    <section class="job-offers" *ngIf="viewMode === 'available'">
+    <section class="job-offers" *ngIf="viewMode === 'available'" [class.shifted]="isMenuOpen">
       <div class="section-header">
         <h2>Ofertas de Trabajo Disponibles</h2>
         <div class="add-offer-container" *ngIf="authService.getUser()?.rol === 'administrador'">
-          <button class="add-button"  *ngIf="authService.getUser()?.rol === 'administrador' && viewMode === 'available'" (click)="openModal()"> Añadir oferta +</button>
+          <button class="add-button" *ngIf="authService.getUser()?.rol === 'administrador' && viewMode === 'available'" (click)="openModal()"> Añadir oferta +</button>
         </div>
       </div>
       <div class="filter-container">
@@ -74,7 +75,7 @@
     </section>
 
     <!-- Ofertas confirmadas -->
-    <section class="job-offers" *ngIf="viewMode === 'applied' && authService.getUser()?.rol === 'trabajador'">
+    <section class="job-offers" *ngIf="viewMode === 'applied' && authService.getUser()?.rol === 'trabajador'" [class.shifted]="isMenuOpen">
       <h2>Mis Ofertas Confirmadas</h2>
       <div *ngIf="appliedOffers.length === 0" class="no-offers">No tienes ofertas confirmadas.</div>
       <div class="offers-grid">
@@ -99,7 +100,7 @@
     </section>
 
     <!-- Gestión de inscripciones (admin) -->
-    <section class="job-offers" *ngIf="viewMode === 'admin' && authService.getUser()?.rol === 'administrador'">
+    <section class="job-offers" *ngIf="viewMode === 'admin' && authService.getUser()?.rol === 'administrador'" [class.shifted]="isMenuOpen">
       <div class="section-header">
         <h2>Ofertas con Inscripciones</h2>
         <button class="add-button" (click)="openModal()">Añadir oferta +</button>
@@ -127,32 +128,30 @@
           </div>
         </div>
       </div>
-        <div class="inscriptions-section" *ngIf="selectedOffer">
-          <h2>
-            {{ selectedOffer.estado === 'open' ? 'Inscritos pendientes para' : 'Trabajadores asignados en' }}: {{ selectedOffer.titulo }}
-          </h2>
-          <div *ngIf="isLoadingInscriptions" class="spinner">Cargando inscripciones/asignados...</div>
-          <div *ngIf="!isLoadingInscriptions && inscriptions.length === 0" class="no-inscriptions">
-            {{ selectedOffer.estado === 'open' ? 'No hay trabajadores inscritos en esta oferta.' : 'No hay trabajadores asignados en esta oferta.' }}
-          </div>
-          <div class="inscriptions-grid" *ngIf="!isLoadingInscriptions && inscriptions.length > 0">
-            <div class="inscription-card" *ngFor="let inscription of inscriptions">
-              <p><strong>Nombre:</strong> {{ inscription.nombre }}</p>
-              <p><strong>Correo:</strong> {{ inscription.correo }}</p>
-              <p><strong>Fecha:</strong> {{ inscription.fecha_inscripcion | date:'short' }}</p>
-              <!-- Botón solo para ofertas abiertas (inscritos pendientes) -->
-              <button *ngIf="selectedOffer.estado === 'open'"
-                      class="assign-button"
-                      (click)="asociarTrabajador(inscription.id_trabajador, inscription.id_oferta)">
-                Asignar a la oferta
-              </button>
-              <!-- Indicador para ofertas cerradas (asignados) -->
-              <div *ngIf="selectedOffer.estado === 'closed'" class="assigned-status">
-                <span class="status assigned">Asignado</span>
-              </div>
+      <div class="inscriptions-section" *ngIf="selectedOffer">
+        <h2>
+          {{ selectedOffer.estado === 'open' ? 'Inscritos pendientes para' : 'Trabajadores asignados en' }}: {{ selectedOffer.titulo }}
+        </h2>
+        <div *ngIf="isLoadingInscriptions" class="spinner">Cargando inscripciones/asignados...</div>
+        <div *ngIf="!isLoadingInscriptions && inscriptions.length === 0" class="no-inscriptions">
+          {{ selectedOffer.estado === 'open' ? 'No hay trabajadores inscritos en esta oferta.' : 'No hay trabajadores asignados en esta oferta.' }}
+        </div>
+        <div class="inscriptions-grid" *ngIf="!isLoadingInscriptions && inscriptions.length > 0">
+          <div class="inscription-card" *ngFor="let inscription of inscriptions">
+            <p><strong>Nombre:</strong> {{ inscription.nombre }}</p>
+            <p><strong>Correo:</strong> {{ inscription.correo }}</p>
+            <p><strong>Fecha:</strong> {{ inscription.fecha_inscripcion | date:'short' }}</p>
+            <button *ngIf="selectedOffer.estado === 'open'"
+                    class="assign-button"
+                    (click)="asociarTrabajador(inscription.id_trabajador, inscription.id_oferta)">
+              Asignar a la oferta
+            </button>
+            <div *ngIf="selectedOffer.estado === 'closed'" class="assigned-status">
+              <span class="status assigned">Asignado</span>
             </div>
           </div>
         </div>
+      </div>
     </section>
 
     <!-- Perfil -->
@@ -167,7 +166,6 @@
         <p><strong>Rol:</strong> {{ user.rol | titlecase }}</p>
       </div>
       <div *ngIf="!isLoading && !user" class="no-data">No se pudieron cargar los datos del usuario.</div>
-
       <div class="section-header">
         <h2>Subir Documentos Firmados</h2>
       </div>
@@ -179,7 +177,6 @@
         <button type="submit" class="submit-button" [disabled]="!selectedFile || isUploading">Subir Documento</button>
         <div *ngIf="isUploading" class="spinner">Subiendo...</div>
       </form>
-
       <div class="section-header">
         <h2>Mis Documentos</h2>
       </div>
