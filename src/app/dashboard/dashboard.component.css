@@ -105,6 +105,9 @@
   color: #ffffff;
 }
 
+
+
+
 .main-content {
     flex: 1;
     margin-left: 299px;
@@ -473,10 +476,28 @@
   color: black;
 }
 
+.job-offers{
+    background: #ffffffee;
+    /* padding: 29px; */
+    padding-top: 10px;
+    margin-bottom: -21px;
+    padding-left: 28px;
+    padding-right: 31px;
+    padding-bottom: 31px;
+    margin-top: -22px;
+    border-radius: 22px;
+}
+
+.job-offers h2{
+    margin-bottom: 21px;
+    color: black;
+}
+
 .offers-calendar-container {
   display: flex;
   flex-wrap: wrap;
   gap: 20px;
+
 }
 
 .offers-grid {
@@ -574,7 +595,7 @@
 
   .job-offers,
   .user-profile {
-    margin-left: 18px;
+   margin-left: -5px;
   }
 
   .sidebar {
