@@ -178,13 +178,17 @@
 .offer-card,
 .document-card,
 .inscription-card {
-  background: #ffffffd8;
-  border-radius: 16px;
-  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
-  padding: 1.5rem;
-  width: 290px;
-  height: 240px;
-  transition: transform 0.3s;
+      background: #ffffffd8;
+    border-radius: 16px;
+    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
+    padding: 1.5rem;
+    width: 290px;
+    padding-right: 15px;
+    padding-left: 20px;
+    padding-top: 0px;
+    padding-bottom: 12px;
+    height: fit-content;
+    transition: transform 0.3s;
 }
 
 .offer-card[data-status="open"] {
@@ -208,7 +212,7 @@
 .inscription-card h3 {
   color: #1e293b;
   font-size: 1.2rem;
-  margin-bottom: 0.5rem;
+  margin-bottom: -0.5rem;
 }
 
 .offer-card p,

@@ -19,6 +19,21 @@ const dbConfig = {
 // Clave secreta para JWT (cámbiala por una más segura en producción)
 const JWT_SECRET = 'your_jwt_secret_key';
 
+// Función para crear una conexión con logging de consultas
+async function createLoggedConnection() {
+    const connection = await mysql.createConnection(dbConfig);
+
+    // Wrapper para el método execute que loguea las consultas
+    const originalExecute = connection.execute.bind(connection);
+    connection.execute = async function(query, params) {
+        console.debug('Consulta SQL:', query);
+        console.debug('Parámetros:', params || []);
+        return originalExecute(query, params);
+    };
+
+    return connection;
+}
+
 // Middleware para verificar el token JWT
 const authenticateToken = (req, res, next) => {
     const authHeader = req.headers['authorization'];
@@ -32,21 +47,19 @@ const authenticateToken = (req, res, next) => {
     });
 };
 
-
 // Endpoint: Registro de usuario
 app.post('/api/register', async (req, res) => {
     const { nombre, correo, contrasena, rol } = req.body;
 
     try {
-        const connection = await mysql.createConnection(dbConfig);
+        const connection = await createLoggedConnection();
         const [existingUsers] = await connection.execute('SELECT correo FROM usuarios WHERE correo = ?', [correo]);
         if (existingUsers.length > 0) {
             await connection.end();
             return res.status(400).json({ error: 'El correo ya está registrado' });
         }
 
-        // Guardar la contraseña en texto plano (SIN HASH)
-        console.log('Contraseña almacenada:', contrasena); // Log para depuración
+        console.log('Contraseña almacenada:', contrasena);
         await connection.execute(
             'INSERT INTO usuarios (nombre, correo, contrasena, rol) VALUES (?, ?, ?, ?)',
             [nombre, correo, contrasena, rol || 'trabajador']
@@ -59,9 +72,10 @@ app.post('/api/register', async (req, res) => {
         res.status(500).json({ error: 'Error al registrar el usuario' });
     }
 });
+
 // Endpoint: Login
 app.post('/api/login', async (req, res) => {
-    console.log('Cuerpo de la solicitud:', req.body); // Agrega este log
+    console.log('Cuerpo de la solicitud:', req.body);
     const { correo, contrasena } = req.body;
 
     if (!correo || !contrasena) {
@@ -69,7 +83,7 @@ app.post('/api/login', async (req, res) => {
     }
 
     try {
-        const connection = await mysql.createConnection(dbConfig);
+        const connection = await createLoggedConnection();
         const [users] = await connection.execute('SELECT * FROM usuarios WHERE correo = ?', [correo]);
         console.log('Usuarios encontrados:', users);
 
@@ -79,7 +93,6 @@ app.post('/api/login', async (req, res) => {
         }
 
         const user = users[0];
-        // Comparar contraseña en texto plano
         const isMatch = contrasena === user.contrasena;
         console.log('¿Contraseña coincide?', isMatch);
 
@@ -101,7 +114,7 @@ app.post('/api/login', async (req, res) => {
 // Endpoint: Obtener perfil del usuario
 app.get('/api/profile', authenticateToken, async (req, res) => {
     try {
-        const connection = await mysql.createConnection(dbConfig);
+        const connection = await createLoggedConnection();
         const [users] = await connection.execute('SELECT id, nombre, correo, rol FROM usuarios WHERE id = ?', [req.user.id]);
 
         if (users.length === 0) {
@@ -120,7 +133,7 @@ app.get('/api/profile', authenticateToken, async (req, res) => {
 // Endpoint: Obtener ofertas de trabajo
 app.get('/api/offers', authenticateToken, async (req, res) => {
     try {
-        const connection = await mysql.createConnection(dbConfig);
+        const connection = await createLoggedConnection();
         const idTrabajador = req.user.id;
 
         const [offers] = await connection.execute(
@@ -151,9 +164,8 @@ app.post('/api/inscripciones-oferta', authenticateToken, async (req, res) => {
     }
 
     try {
-        const connection = await mysql.createConnection(dbConfig);
+        const connection = await createLoggedConnection();
 
-        // Verificar si la oferta existe y está abierta
         const [offers] = await connection.execute(
             'SELECT estado FROM ofertas_trabajo WHERE id = ?',
             [id_oferta]
@@ -167,7 +179,6 @@ app.post('/api/inscripciones-oferta', authenticateToken, async (req, res) => {
             return res.status(400).json({ error: 'La oferta ya está cerrada' });
         }
 
-        // Verificar si el trabajador ya se inscribió a esta oferta
         const [existingInscription] = await connection.execute(
             'SELECT id FROM inscripciones_oferta WHERE id_trabajador = ? AND id_oferta = ?',
             [id_trabajador, id_oferta]
@@ -177,7 +188,6 @@ app.post('/api/inscripciones-oferta', authenticateToken, async (req, res) => {
             return res.status(400).json({ error: 'Ya te has inscrito a esta oferta' });
         }
 
-        // Registrar la inscripción
         await connection.execute(
             'INSERT INTO inscripciones_oferta (id_trabajador, id_oferta) VALUES (?, ?)',
             [id_trabajador, id_oferta]
@@ -201,9 +211,8 @@ app.delete('/api/inscripciones-oferta', authenticateToken, async (req, res) => {
     }
 
     try {
-        const connection = await mysql.createConnection(dbConfig);
+        const connection = await createLoggedConnection();
 
-        // Verificar si el trabajador está inscrito
         const [existingInscription] = await connection.execute(
             'SELECT id FROM inscripciones_oferta WHERE id_trabajador = ? AND id_oferta = ?',
             [id_trabajador, id_oferta]
@@ -213,7 +222,6 @@ app.delete('/api/inscripciones-oferta', authenticateToken, async (req, res) => {
             return res.status(400).json({ error: 'No estás inscrito en esta oferta' });
         }
 
-        // Eliminar la inscripción
         await connection.execute(
             'DELETE FROM inscripciones_oferta WHERE id_trabajador = ? AND id_oferta = ?',
             [id_trabajador, id_oferta]
@@ -229,28 +237,28 @@ app.delete('/api/inscripciones-oferta', authenticateToken, async (req, res) => {
 
 // Endpoint: Obtener ofertas con al menos un inscrito o asignado (solo administradores)
 app.get('/api/admin-offers', authenticateToken, async (req, res) => {
-  if (req.user.rol !== 'administrador') {
-    return res.status(403).json({ error: 'Acceso denegado, solo administradores' });
-  }
+    if (req.user.rol !== 'administrador') {
+        return res.status(403).json({ error: 'Acceso denegado, solo administradores' });
+    }
 
-  try {
-    const connection = await mysql.createConnection(dbConfig);
-    const [offers] = await connection.execute(
-      `SELECT DISTINCT o.id, o.titulo, o.descripcion, DATE_FORMAT(o.fecha, '%Y-%m-%d') AS fecha,
-              o.creado_por, o.fecha_creacion, o.estado,
-              FALSE AS inscrita
-       FROM ofertas_trabajo o
-       WHERE EXISTS (SELECT 1 FROM inscripciones_oferta io WHERE io.id_oferta = o.id)
-          OR EXISTS (SELECT 1 FROM trabajador_oferta tof WHERE tof.id_oferta = o.id)`,
-      []
-    );
+    try {
+        const connection = await createLoggedConnection();
+        const [offers] = await connection.execute(
+            `SELECT DISTINCT o.id, o.titulo, o.descripcion, DATE_FORMAT(o.fecha, '%Y-%m-%d') AS fecha,
+                    o.creado_por, o.fecha_creacion, o.estado,
+                    FALSE AS inscrita
+             FROM ofertas_trabajo o
+             WHERE EXISTS (SELECT 1 FROM inscripciones_oferta io WHERE io.id_oferta = o.id)
+                OR EXISTS (SELECT 1 FROM trabajador_oferta tof WHERE tof.id_oferta = o.id)`,
+            []
+        );
 
-    await connection.end();
-    res.json(offers);
-  } catch (error) {
-    console.error('Error al obtener ofertas con inscritos/asignados:', error);
-    res.status(500).json({ error: 'Error al obtener las ofertas con inscritos/asignados' });
-  }
+        await connection.end();
+        res.json(offers);
+    } catch (error) {
+        console.error('Error al obtener ofertas con inscritos/asignados:', error);
+        res.status(500).json({ error: 'Error al obtener las ofertas con inscritos/asignados' });
+    }
 });
 
 // Endpoint: Obtener ofertas confirmadas por un trabajador
@@ -262,7 +270,7 @@ app.get('/api/trabajador-oferta/:idTrabajador', authenticateToken, async (req, r
     }
 
     try {
-        const connection = await mysql.createConnection(dbConfig);
+        const connection = await createLoggedConnection();
         const [offers] = await connection.execute(
             `SELECT o.id, o.titulo, o.descripcion, DATE_FORMAT(o.fecha, '%Y-%m-%d') AS fecha, o.creado_por, o.fecha_creacion, o.estado, TRUE AS aplicada
              FROM ofertas_trabajo o
@@ -293,7 +301,7 @@ app.post('/api/offers', authenticateToken, async (req, res) => {
     }
 
     try {
-        const connection = await mysql.createConnection(dbConfig);
+        const connection = await createLoggedConnection();
         await connection.execute(
             'INSERT INTO ofertas_trabajo (titulo, descripcion, fecha, creado_por, estado) VALUES (?, ?, ?, ?, ?)',
             [titulo, descripcion, fecha, creado_por, 'open']
@@ -307,131 +315,121 @@ app.post('/api/offers', authenticateToken, async (req, res) => {
     }
 });
 
-
 // Endpoint: Obtener inscripciones o asignados por oferta (solo administradores)
 app.get('/api/inscripciones-oferta/:idOferta', authenticateToken, async (req, res) => {
-  if (req.user.rol !== 'administrador') {
-    return res.status(403).json({ error: 'Acceso denegado, solo administradores' });
-  }
-
-  const idOferta = req.params.idOferta;
-
-  try {
-    const connection = await mysql.createConnection(dbConfig);
-
-    // Obtener el estado de la oferta
-    const [offer] = await connection.execute(
-      'SELECT estado FROM ofertas_trabajo WHERE id = ?',
-      [idOferta]
-    );
-
-    if (offer.length === 0) {
-      await connection.end();
-      return res.status(404).json({ error: 'Oferta no encontrada' });
+    if (req.user.rol !== 'administrador') {
+        return res.status(403).json({ error: 'Acceso denegado, solo administradores' });
     }
 
-    let inscriptions = [];
-    const estado = offer[0].estado;
+    const idOferta = req.params.idOferta;
 
-    if (estado === 'open') {
-      // Para ofertas abiertas: mostrar inscritos pendientes (inscripciones_oferta)
-      [inscriptions] = await connection.execute(
-        `SELECT io.id, io.id_trabajador, io.id_oferta, io.fecha_inscripcion, u.nombre, u.correo
-         FROM inscripciones_oferta io
-         INNER JOIN usuarios u ON io.id_trabajador = u.id
-         WHERE io.id_oferta = ?`,
-        [idOferta]
-      );
-    } else {
-      // Para ofertas cerradas: mostrar trabajadores asignados (trabajador_oferta)
-      [inscriptions] = await connection.execute(
-        `SELECT NULL as id, tof.id_trabajador, tof.id_oferta, tof.fecha_asignacion as fecha_inscripcion, u.nombre, u.correo
-         FROM trabajador_oferta tof
-         INNER JOIN usuarios u ON tof.id_trabajador = u.id
-         WHERE tof.id_oferta = ?`,
-        [idOferta]
-      );
+    try {
+        const connection = await createLoggedConnection();
+
+        const [offer] = await connection.execute(
+            'SELECT estado FROM ofertas_trabajo WHERE id = ?',
+            [idOferta]
+        );
+
+        if (offer.length === 0) {
+            await connection.end();
+            return res.status(404).json({ error: 'Oferta no encontrada' });
+        }
+
+        let inscriptions = [];
+        const estado = offer[0].estado;
+
+        if (estado === 'open') {
+            [inscriptions] = await connection.execute(
+                `SELECT io.id, io.id_trabajador, io.id_oferta, io.fecha_inscripcion, u.nombre, u.correo
+                 FROM inscripciones_oferta io
+                 INNER JOIN usuarios u ON io.id_trabajador = u.id
+                 WHERE io.id_oferta = ?`,
+                [idOferta]
+            );
+        } else {
+            [inscriptions] = await connection.execute(
+                `SELECT NULL as id, tof.id_trabajador, tof.id_oferta, tof.fecha_asignacion as fecha_inscripcion, u.nombre, u.correo
+                 FROM trabajador_oferta tof
+                 INNER JOIN usuarios u ON tof.id_trabajador = u.id
+                 WHERE tof.id_oferta = ?`,
+                [idOferta]
+            );
+        }
+
+        await connection.end();
+        res.json(inscriptions);
+    } catch (error) {
+        console.error('Error al obtener inscripciones/asignados:', error);
+        res.status(500).json({ error: 'Error al obtener las inscripciones/asignados' });
     }
-
-    await connection.end();
-    res.json(inscriptions);
-  } catch (error) {
-    console.error('Error al obtener inscripciones/asignados:', error);
-    res.status(500).json({ error: 'Error al obtener las inscripciones/asignados' });
-  }
 });
 
-// Endpoint: Asociar trabajador a oferta (solo administradores) - Actualizado para incluir fecha_asignacion
+// Endpoint: Asociar trabajador a oferta (solo administradores)
 app.post('/api/asociar-trabajador-oferta', authenticateToken, async (req, res) => {
-  if (req.user.rol !== 'administrador') {
-    return res.status(403).json({ error: 'Acceso denegado, solo administradores' });
-  }
-
-  const { id_trabajador, id_oferta } = req.body;
-
-  if (!id_trabajador || !id_oferta) {
-    return res.status(400).json({ error: 'Faltan id_trabajador o id_oferta' });
-  }
-
-  try {
-    const connection = await mysql.createConnection(dbConfig);
-
-    // Verificar si el trabajador está inscrito
-    const [existingInscription] = await connection.execute(
-      'SELECT id, fecha_inscripcion FROM inscripciones_oferta WHERE id_trabajador = ? AND id_oferta = ?',
-      [id_trabajador, id_oferta]
-    );
-    if (existingInscription.length === 0) {
-      await connection.end();
-      return res.status(400).json({ error: 'El trabajador no está inscrito en esta oferta' });
+    if (req.user.rol !== 'administrador') {
+        return res.status(403).json({ error: 'Acceso denegado, solo administradores' });
     }
 
-    // Verificar si la oferta ya está asignada al trabajador
-    const [existingAssignment] = await connection.execute(
-      'SELECT id FROM trabajador_oferta WHERE id_trabajador = ? AND id_oferta = ?',
-      [id_trabajador, id_oferta]
-    );
-    if (existingAssignment.length > 0) {
-      await connection.end();
-      return res.status(400).json({ error: 'El trabajador ya está asignado a esta oferta' });
+    const { id_trabajador, id_oferta } = req.body;
+
+    if (!id_trabajador || !id_oferta) {
+        return res.status(400).json({ error: 'Faltan id_trabajador o id_oferta' });
     }
 
-    const fechaAsignacion = existingInscription[0].fecha_inscripcion;
-
-    // Iniciar transacción
-    await connection.beginTransaction();
     try {
-      // Insertar en trabajador_oferta con la fecha de inscripción original
-      await connection.execute(
-        'INSERT INTO trabajador_oferta (id_trabajador, id_oferta, fecha_asignacion) VALUES (?, ?, ?)',
-        [id_trabajador, id_oferta, fechaAsignacion]
-      );
+        const connection = await createLoggedConnection();
 
-      // Eliminar la inscripción
-      await connection.execute(
-        'DELETE FROM inscripciones_oferta WHERE id_trabajador = ? AND id_oferta = ?',
-        [id_trabajador, id_oferta]
-      );
+        const [existingInscription] = await connection.execute(
+            'SELECT id, fecha_inscripcion FROM inscripciones_oferta WHERE id_trabajador = ? AND id_oferta = ?',
+            [id_trabajador, id_oferta]
+        );
+        if (existingInscription.length === 0) {
+            await connection.end();
+            return res.status(400).json({ error: 'El trabajador no está inscrito en esta oferta' });
+        }
 
-      // Cerrar la oferta
-      await connection.execute(
-        'UPDATE ofertas_trabajo SET estado = "closed" WHERE id = ?',
-        [id_oferta]
-      );
+        const [existingAssignment] = await connection.execute(
+            'SELECT id FROM trabajador_oferta WHERE id_trabajador = ? AND id_oferta = ?',
+            [id_trabajador, id_oferta]
+        );
+        if (existingAssignment.length > 0) {
+            await connection.end();
+            return res.status(400).json({ error: 'El trabajador ya está asignado a esta oferta' });
+        }
 
-      await connection.commit();
-      await connection.end();
-      res.status(201).json({ message: 'Trabajador asignado correctamente' });
+        const fechaAsignacion = existingInscription[0].fecha_inscripcion;
+
+        await connection.beginTransaction();
+        try {
+            await connection.execute(
+                'INSERT INTO trabajador_oferta (id_trabajador, id_oferta, fecha_asignacion) VALUES (?, ?, ?)',
+                [id_trabajador, id_oferta, fechaAsignacion]
+            );
+
+            await connection.execute(
+                'DELETE FROM inscripciones_oferta WHERE id_trabajador = ? AND id_oferta = ?',
+                [id_trabajador, id_oferta]
+            );
+
+            await connection.execute(
+                'UPDATE ofertas_trabajo SET estado = "closed" WHERE id = ?',
+                [id_oferta]
+            );
+
+            await connection.commit();
+            await connection.end();
+            res.status(201).json({ message: 'Trabajador asignado correctamente' });
+        } catch (error) {
+            await connection.rollback();
+            await connection.end();
+            console.error('Error al asociar trabajador:', error);
+            res.status(500).json({ error: 'Error al asociar el trabajador' });
+        }
     } catch (error) {
-      await connection.rollback();
-      await connection.end();
-      console.error('Error al asociar trabajador:', error);
-      res.status(500).json({ error: 'Error al asociar el trabajador' });
+        console.error('Error al procesar la solicitud:', error);
+        res.status(500).json({ error: 'Error en el servidor' });
     }
-  } catch (error) {
-    console.error('Error al procesar la solicitud:', error);
-    res.status(500).json({ error: 'Error en el servidor' });
-  }
 });
 
 // Iniciar el servidor
